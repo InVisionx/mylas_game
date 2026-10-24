@@ -119,6 +119,7 @@ func return_to_menu() -> void:
 func change_scene(path: String) -> void:
 	InputManager.touch_active = false
 	get_tree().paused = false
+	Diagnostics.log_event("scene -> %s" % path)
 	get_tree().call_deferred("change_scene_to_file", path)
 
 

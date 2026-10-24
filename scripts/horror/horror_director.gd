@@ -110,6 +110,9 @@ func _flicker_lights(duration: float, intensity: float) -> void:
 	_busy = true
 	var elapsed := 0.0
 	while elapsed < duration:
+		if not is_instance_valid(builder):
+			_busy = false
+			return
 		var drop := _rng.randf() < intensity
 		for light in builder.ceiling_lights:
 			light.light_energy = 0.05 if drop else 1.15
@@ -125,10 +128,12 @@ func _flicker_lights(duration: float, intensity: float) -> void:
 
 
 func _restore_lights() -> void:
-	if builder == null:
+	if not is_instance_valid(builder):
 		return
 	for i in builder.ceiling_lights.size():
 		var light := builder.ceiling_lights[i]
+		if not is_instance_valid(light):
+			continue
 		light.light_energy = _base_energies[i] if i < _base_energies.size() else 1.15
 		var panel: Node = light.get_meta("panel", null)
 		if panel and panel is MeshInstance3D:
@@ -231,6 +236,7 @@ func play_entity_departure(customer: Customer) -> void:
 	if customer == null or not is_instance_valid(customer) or player == null:
 		return
 	var kind := _pick_scare()
+	Diagnostics.log_event("jumpscare %s (customer %d)" % [kind, customer.customer_id])
 	GameManager.open_modal()
 	player.focus_mode(true)
 	Events.jumpscare_started.emit(kind)

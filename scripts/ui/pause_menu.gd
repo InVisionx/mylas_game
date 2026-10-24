@@ -6,8 +6,13 @@ var _root: Control
 var _main_page: VBoxContainer
 var _settings_page: VBoxContainer
 var _controls_page: VBoxContainer
+var _diagnostics_page: VBoxContainer
 var _title: Label
 var _open := false
+var _diag_live: Label
+var _diag_note: Label
+var _diag_tail: Label
+var _diag_timer := 0.0
 
 
 func _ready() -> void:
@@ -59,6 +64,11 @@ func _on_pause_requested(paused: bool) -> void:
 func _process(_delta: float) -> void:
 	if _open and InputManager.is_just_pressed("pause"):
 		close()
+	if _open and _diagnostics_page != null and _diagnostics_page.visible:
+		_diag_timer -= _delta
+		if _diag_timer <= 0.0:
+			_diag_timer = 0.5
+			_refresh_diagnostics()
 
 
 func _build() -> void:
@@ -87,7 +97,8 @@ func _build() -> void:
 	_main_page = UIKit.vbox(10)
 	_settings_page = UIKit.vbox(8)
 	_controls_page = UIKit.vbox(6)
-	for page in [_main_page, _settings_page, _controls_page]:
+	_diagnostics_page = UIKit.vbox(8)
+	for page in [_main_page, _settings_page, _controls_page, _diagnostics_page]:
 		page.size_flags_vertical = Control.SIZE_EXPAND_FILL
 		box.add_child(page)
 
@@ -98,17 +109,23 @@ func _build() -> void:
 	_build_main()
 	_build_settings()
 	_build_controls()
+	_build_diagnostics()
 
 
 func _build_main() -> void:
 	for child in _main_page.get_children():
 		child.queue_free()
+	if Diagnostics.previous_session_crashed:
+		var warn := UIKit.label("Previous session ended unexpectedly — see DIAGNOSTICS", 22, UIKit.BAD)
+		warn.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		_main_page.add_child(warn)
 	_main_page.add_child(UIKit.button("RESUME SHIFT", 30))
 	var resume := _main_page.get_child(_main_page.get_child_count() - 1) as Button
 	resume.pressed.connect(close)
 
 	_add_page_button("SETTINGS", "settings")
 	_add_page_button("CONTROLS & BINDINGS", "controls")
+	_add_page_button("DIAGNOSTICS", "diagnostics")
 	var notebook_button := UIKit.button("NOTEBOOK", 30)
 	notebook_button.pressed.connect(_open_notebook)
 	_main_page.add_child(notebook_button)
@@ -131,6 +148,7 @@ func _show_page(page: String) -> void:
 	_main_page.visible = page == "main"
 	_settings_page.visible = page == "settings"
 	_controls_page.visible = page == "controls"
+	_diagnostics_page.visible = page == "diagnostics"
 	match page:
 		"settings":
 			_title.text = "SETTINGS"
@@ -138,9 +156,19 @@ func _show_page(page: String) -> void:
 		"controls":
 			_title.text = "CONTROLS"
 			_refresh_bindings()
+		"diagnostics":
+			_title.text = "DIAGNOSTICS"
+			_refresh_diagnostics()
 		_:
 			_title.text = "PAUSED"
-	var first := _first_focusable(_settings_page if page == "settings" else (_controls_page if page == "controls" else _main_page))
+	var target_page: VBoxContainer = _main_page
+	if page == "settings":
+		target_page = _settings_page
+	elif page == "controls":
+		target_page = _controls_page
+	elif page == "diagnostics":
+		target_page = _diagnostics_page
+	var first := _first_focusable(target_page)
 	if first != null:
 		first.grab_focus()
 
@@ -323,6 +351,50 @@ func _refresh_bindings() -> void:
 		)
 		row.add_child(button)
 		list.add_child(row)
+
+
+func _build_diagnostics() -> void:
+	_diagnostics_page.visible = false
+	_diag_note = UIKit.label("Live engine counters and the tail of the flight recorder.", 24, UIKit.TEXT_DIM)
+	_diag_note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_diagnostics_page.add_child(_diag_note)
+
+	_diag_live = UIKit.label("", 24, UIKit.TEXT)
+	_diagnostics_page.add_child(_diag_live)
+
+	var scroll := ScrollContainer.new()
+	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	scroll.custom_minimum_size = Vector2(0, 280)
+	_diagnostics_page.add_child(scroll)
+	_diag_tail = UIKit.label("", 18, UIKit.TEXT_DIM)
+	_diag_tail.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	scroll.add_child(_diag_tail)
+
+	var row := UIKit.hbox(10)
+	var copy := UIKit.button("COPY LOG", 26)
+	copy.pressed.connect(func():
+		DisplayServer.clipboard_set(Diagnostics.tail(40))
+		_diag_note.text = "Log copied to clipboard."
+		_diag_note.add_theme_color_override("font_color", UIKit.ACCENT)
+	)
+	row.add_child(copy)
+	var back := UIKit.button("BACK", 26)
+	back.pressed.connect(_show_page.bind("main"))
+	row.add_child(back)
+	_diagnostics_page.add_child(row)
+
+	var path := UIKit.label("log file: %s" % Diagnostics.log_path_display(), 18, UIKit.TEXT_DIM)
+	_diagnostics_page.add_child(path)
+
+
+func _refresh_diagnostics() -> void:
+	if _diag_live == null:
+		return
+	_diag_live.text = Diagnostics.live_summary()
+	_diag_tail.text = "[engine]\n%s\n\n[events]\n%s" % [Diagnostics.engine_tail(10), Diagnostics.tail(10)]
+	if Diagnostics.previous_session_crashed:
+		_diag_note.text = "The previous session did not shut down cleanly. The log below may show where it stopped."
+		_diag_note.add_theme_color_override("font_color", UIKit.BAD)
 
 
 func _open_notebook() -> void:

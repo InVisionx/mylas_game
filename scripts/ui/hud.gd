@@ -383,6 +383,8 @@ func _handle_actions() -> void:
 func _update_zoom() -> void:
 	if inspection != null and inspection.active:
 		return
+	if not is_instance_valid(player):
+		return
 	var held := InputManager.is_held("zoom")
 	var base := float(SettingsManager.graphics.get("fov", 75.0))
 	player.set_fov(base - (14.0 if held else 0.0))

@@ -11,7 +11,7 @@ config_version=5
 [application]
 
 config/name="Night Shift: Not Human"
-config/version="0.2.2"
+config/version="0.2.3"
 config/description="A first-person night-shift horror game. Scan groceries. Watch the customers. Some of them are not people."
 run/main_scene="res://scenes/boot.tscn"
 config/features=PackedStringArray("4.7", "Mobile")
@@ -29,6 +29,7 @@ InputManager="*res://scripts/autoload/input_manager.gd"
 AudioManager="*res://scripts/autoload/audio_manager.gd"
 GameManager="*res://scripts/autoload/game_manager.gd"
 UpdateManager="*res://scripts/autoload/update_manager.gd"
+Diagnostics="*res://scripts/autoload/diagnostics.gd"
 
 [display]
 
@@ -39,6 +40,7 @@ window/size/window_height_override=864
 window/stretch/mode="canvas_items"
 window/stretch/aspect="expand"
 window/handheld/orientation=0
+window/energy_saving/keep_screen_on=true
 
 [editor_plugins]
 
@@ -54,7 +56,7 @@ folder_colors={
 
 [night_shift]
 
-version_code=4
+version_code=5
 
 [layer_names]
 

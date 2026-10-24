@@ -1,9 +1,9 @@
 {
-    "code":  4,
-    "name":  "0.2.2",
+    "code":  5,
+    "name":  "0.2.3",
     "apk_url":  "https://github.com/InVisionx/mylas_game/raw/main/dist/NightShift-NotHuman.apk",
-    "notes":  "Update checks now read GitHub directly, and the main menu shows the update banner.",
-    "sha256":  "518B75D24A31BFF231DCACD2CEFED3E3204F17780600A731ACD819333AB0FEE2",
+    "notes":  "Adds a flight recorder and a DIAGNOSTICS page so crashes can be traced, plus scene-teardown hardening.",
+    "sha256":  "4532135E6E602B64BC8618FF2855C146FCAF894B3D41FA9C56C7623656DE750B",
     "size_mb":  25.5,
     "released":  "2026-10-24"
 }

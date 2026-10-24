@@ -61,6 +61,9 @@ func start_shift() -> void:
 	Events.money_changed.emit(int(GameManager.profile.get("money", 0)), 0)
 	Events.shift_started.emit(GameManager.shift_index, shift_data)
 	Events.notify.emit("Shift started. Register online.", "info")
+	Diagnostics.log_event("shift %d (%s) start: %d customers, entity chance %.2f" % [
+		GameManager.shift_index, str(shift_data.get("name", "")), customers_planned, float(shift_data.get("entity_chance", 0.0)),
+	])
 
 
 func _process(delta: float) -> void:
@@ -102,6 +105,7 @@ func _spawn_customer(force_entity: bool = false) -> void:
 	customer.configure(spawned, shift_data, rng, force_entity, force_human)
 	if customer.is_entity:
 		GameManager.session["entities_total"] = entity_count + 1
+	Diagnostics.log_event("spawn #%d entity=%s anomalies=%d" % [spawned, str(customer.is_entity), customer.anomalies.size()])
 	customer.global_position = StoreLayout.SPAWN_OUTSIDE + Vector3(rng.randf_range(-1.2, 1.2), 0.0, rng.randf_range(0.0, 2.0))
 	customer.rotation.y = PI
 	customers.append(customer)
@@ -234,6 +238,9 @@ func _decide(approved: bool) -> void:
 	Events.decision_resolved.emit(customer.customer_id, approved, bool(result["correct"]), customer.is_entity)
 	decision_resolved.emit(bool(result["correct"]), str(result["message"]))
 	Events.notify.emit(str(result["message"]), "good" if bool(result["correct"]) else "bad")
+	Diagnostics.log_event("decision %s entity=%s correct=%s customer=%s" % [
+		"approve" if approved else "reject", str(customer.is_entity), str(result["correct"]), customer.full_name,
+	])
 
 	active_customer = null
 	if queue.has(customer):
@@ -313,6 +320,7 @@ func _end_shift(failed: bool, reason: String) -> void:
 		return
 	_ending = true
 	running = false
+	Diagnostics.log_event("shift end failed=%s reason=%s served=%d" % [str(failed), reason, served])
 	if inspection != null and inspection.active:
 		inspection.end()
 	AudioManager.set_tension(0)

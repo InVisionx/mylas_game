@@ -93,13 +93,17 @@ func get_interact_prompt() -> String:
 
 
 func _process(delta: float) -> void:
-	if player == null or viewport == null:
+	if not is_instance_valid(player):
+		return
+	if viewport == null:
 		return
 	_update_timer -= delta
 	if _update_timer > 0.0:
 		return
 	_update_timer = 0.12
-	if builder == null or builder.security_monitor == null:
+	if builder == null or not is_instance_valid(builder) or builder.security_monitor == null:
+		return
+	if not is_instance_valid(player.camera):
 		return
 	var to_monitor := (builder.security_monitor.global_position + Vector3(0, 1.5, 0) - player.camera.global_position)
 	var distance := to_monitor.length()
