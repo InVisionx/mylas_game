@@ -109,6 +109,9 @@ func _run() -> void:
 		_finish()
 		return
 	_check("customer has generated body", spawned.body != null and spawned.body.head != null)
+	_check("customer uses rigged model", spawned.body.using_model, str(spawned.body.using_model))
+	if spawned.body.using_model:
+		_check("rigged model is animated", spawned.body._anim != null and spawned.body._anim.has_animation("walk"))
 	_check("customer has basket", spawned.basket.size() >= 3, "%d items" % spawned.basket.size())
 
 	var start_pos := spawned.global_position

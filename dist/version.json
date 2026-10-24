@@ -1,9 +1,9 @@
 {
-    "code":  7,
-    "name":  "0.2.5",
+    "code":  8,
+    "name":  "0.2.6",
     "apk_url":  "https://github.com/InVisionx/mylas_game/raw/main/dist/NightShift-NotHuman.apk",
-    "notes":  "Adds the real product model pipeline, starting with the milk carton.",
-    "sha256":  "BC3BCBCD66F6131900329E7167FF14ED68D3629DF0F8107E275BA3BB8B92EB2C",
-    "size_mb":  27.8,
+    "notes":  "Rigged, animated low-poly customers built in Blender, plus per-customer tinting.",
+    "sha256":  "159D724A5564F922CD50D8FAF0D00F428ACAA3C2BF5F8BE5D14D2F7A57106B3B",
+    "size_mb":  27.9,
     "released":  "2026-10-24"
 }

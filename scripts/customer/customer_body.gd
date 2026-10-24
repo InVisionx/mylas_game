@@ -64,6 +64,19 @@ var _walk_blend := 0.0
 var _frozen := false
 var _materials: Dictionary = {}
 
+## Real rigged character support. When a glb exists it replaces the primitive
+## body entirely; anomalies that need bone tricks still apply, mesh-deformation
+## ones (fingers, teeth, smile) only exist in the procedural version.
+const MODEL_PATH := "res://models/customers/customer_a.glb"
+var using_model := false
+var _model_root: Node3D
+var _skeleton: Skeleton3D
+var _anim: AnimationPlayer
+var _head_bone := -1
+var _neck_bone := -1
+var _hand_r_bone := -1
+var _hand_l_bone := -1
+
 
 func build(seed_value: int, options: Dictionary = {}) -> void:
 	rng.seed = seed_value
@@ -72,11 +85,109 @@ func build(seed_value: int, options: Dictionary = {}) -> void:
 	skin = SKIN_TONES[rng.randi_range(0, SKIN_TONES.size() - 1)]
 	shirt = SHIRT_COLORS[rng.randi_range(0, SHIRT_COLORS.size() - 1)]
 	hair_color = HAIR_COLORS[rng.randi_range(0, HAIR_COLORS.size() - 1)]
+
+	if ResourceLoader.exists(MODEL_PATH) and _build_from_model():
+		_build_shadow()
+		for anomaly in options.get("anomalies", []):
+			apply_anomaly(anomaly)
+		return
+
 	_make_materials()
 	_build_body()
 	_build_shadow()
 	for anomaly in options.get("anomalies", []):
 		apply_anomaly(anomaly)
+
+
+func _build_from_model() -> bool:
+	var packed := load(MODEL_PATH) as PackedScene
+	if packed == null:
+		return false
+	var model := packed.instantiate() as Node3D
+	if model == null:
+		return false
+	model.name = "Model"
+	model.scale = Vector3(body_width, height_scale, body_width)
+	add_child(model)
+	_model_root = model
+
+	_skeleton = _find_of_type(model, "Skeleton3D") as Skeleton3D
+	_anim = _find_of_type(model, "AnimationPlayer") as AnimationPlayer
+	if _skeleton == null:
+		model.queue_free()
+		return false
+
+	_head_bone = _skeleton.find_bone("Head")
+	_neck_bone = _skeleton.find_bone("Neck")
+	_hand_r_bone = _skeleton.find_bone("Hand.R")
+	_hand_l_bone = _skeleton.find_bone("Hand.L")
+
+	_tint_model()
+
+	head = _bone_anchor("Head", Vector3.ZERO)
+	neck = _bone_anchor("Neck", Vector3.ZERO)
+	torso = _bone_anchor("Chest", Vector3.ZERO)
+	hand_r = _bone_anchor("Hand.R", Vector3.ZERO)
+	hand_l = _bone_anchor("Hand.L", Vector3.ZERO)
+	mouth = _bone_anchor("Head", Vector3(0.0, -0.075, 0.115))
+	if _anim != null:
+		if _anim.has_animation("idle"):
+			_anim.play("idle")
+	using_model = true
+	return true
+
+
+func _find_of_type(node: Node, type_name: String) -> Node:
+	if node.is_class(type_name):
+		return node
+	for child in node.get_children():
+		var found := _find_of_type(child, type_name)
+		if found != null:
+			return found
+	return null
+
+
+## Recolour the imported materials so two customers are never identical.
+func _tint_model() -> void:
+	if _model_root == null:
+		return
+	var pants := shirt.darkened(0.55)
+	for mesh in _model_root.find_children("*", "MeshInstance3D", true, false) as Array[MeshInstance3D]:
+		var mesh_resource := mesh.mesh
+		if mesh_resource == null:
+			continue
+		for index in mesh_resource.get_surface_count():
+			var source := mesh_resource.surface_get_material(index)
+			if source == null:
+				continue
+			var duplicate := source.duplicate() as StandardMaterial3D
+			if duplicate == null:
+				continue
+			var name_hint := (str(duplicate.resource_name) + " " + str(source.resource_name)).to_lower()
+			if name_hint.contains("skin"):
+				duplicate.albedo_color = skin
+			elif name_hint.contains("shirt"):
+				duplicate.albedo_color = shirt
+			elif name_hint.contains("pant"):
+				duplicate.albedo_color = pants
+			elif name_hint.contains("hair") or name_hint.contains("brow"):
+				duplicate.albedo_color = hair_color
+			mesh.set_surface_override_material(index, duplicate)
+
+
+## Marker that follows a bone, used by inspection to aim at body parts.
+func _bone_anchor(bone_name: String, offset: Vector3) -> Node3D:
+	var anchor := Node3D.new()
+	anchor.name = "Anchor_%s" % bone_name.replace(".", "_")
+	if _skeleton == null or _skeleton.find_bone(bone_name) < 0:
+		add_child(anchor)
+		return anchor
+	var attachment := BoneAttachment3D.new()
+	attachment.bone_name = bone_name
+	_skeleton.add_child(attachment)
+	anchor.position = offset
+	attachment.add_child(anchor)
+	return anchor
 
 
 func _make_materials() -> void:
@@ -273,6 +384,16 @@ func set_silhouette() -> void:
 
 
 func set_skin_glitch(enabled: bool) -> void:
+	if using_model:
+		for mesh in _model_root.find_children("*", "MeshInstance3D", true, false) as Array[MeshInstance3D]:
+			if enabled:
+				var dark := StandardMaterial3D.new()
+				dark.albedo_color = Color(0.05, 0.05, 0.06)
+				dark.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+				mesh.material_override = dark
+			else:
+				mesh.material_override = null
+		return
 	var skin_mat: StandardMaterial3D = _materials["skin"]
 	var shirt_mat: StandardMaterial3D = _materials["shirt"]
 	if enabled:
@@ -286,6 +407,9 @@ func set_skin_glitch(enabled: bool) -> void:
 # --- Animation --------------------------------------------------------------
 
 func animate(delta: float, speed: float, looking_at: Vector3 = Vector3.ZERO) -> void:
+	if using_model:
+		_animate_model(delta, speed, looking_at)
+		return
 	if _frozen:
 		return
 	_walk_blend = lerpf(_walk_blend, clampf(speed / 1.6, 0.0, 1.0), delta * 5.0)
@@ -350,6 +474,8 @@ func _animate_mouth(delta: float) -> void:
 
 
 func speak() -> void:
+	if using_model:
+		return
 	mouth_open = 1.0
 	teeth_root.visible = true
 
@@ -367,6 +493,9 @@ func _face_head_towards(point: Vector3, delta: float) -> void:
 
 
 func turn_head_to(point: Vector3, snap: bool = false) -> void:
+	if using_model:
+		_model_head_to(point)
+		return
 	var reference := head.get_parent() as Node3D
 	if reference == null:
 		return
@@ -379,10 +508,14 @@ func turn_head_to(point: Vector3, snap: bool = false) -> void:
 
 func freeze() -> void:
 	_frozen = true
+	if using_model and _anim != null:
+		_anim.speed_scale = 0.0
 
 
 func unfreeze() -> void:
 	_frozen = false
+	if using_model and _anim != null:
+		_anim.speed_scale = 1.0
 
 
 func is_frozen() -> bool:
@@ -397,6 +530,8 @@ func set_shadow_lag(amount: float) -> void:
 
 
 func raise_arm(side: String = "right") -> void:
+	if using_model:
+		return
 	var shoulder := shoulder_r if side == "right" else shoulder_l
 	var tween := create_tween()
 	tween.tween_property(shoulder, "rotation:x", -1.15, 0.35).set_trans(Tween.TRANS_SINE)
@@ -405,6 +540,9 @@ func raise_arm(side: String = "right") -> void:
 
 
 func apply_anomaly(anomaly: Dictionary) -> void:
+	if using_model:
+		_apply_bone_anomaly(anomaly)
+		return
 	var visual: Dictionary = anomaly.get("visual", {})
 	match str(visual.get("kind", "")):
 		"extra_finger":
@@ -464,3 +602,54 @@ func hand_anchor() -> Node3D:
 
 func eyes_anchor() -> Node3D:
 	return pupil_l if pupil_l else head
+
+
+# --- Rigged-model driving ---------------------------------------------------
+
+func _animate_model(delta: float, speed: float, looking_at: Vector3) -> void:
+	if _anim == null:
+		return
+	var want := "walk" if speed > 0.35 else "idle"
+	if _anim.has_animation(want) and _anim.current_animation != want:
+		_anim.play(want, 0.25)
+	if want == "walk":
+		_anim.speed_scale = clampf(speed / 1.3, 0.55, 1.9)
+	else:
+		_anim.speed_scale = 1.0
+	if looking_at != Vector3.ZERO:
+		_model_head_to(looking_at)
+
+
+## Aim the head bone at a point. Small clamps keep it inside a human range.
+func _model_head_to(point: Vector3) -> void:
+	if _skeleton == null or _head_bone < 0:
+		return
+	var local := global_transform.affine_inverse() * point
+	var flat := Vector2(local.x, local.z).length()
+	var yaw := atan2(-local.x, -local.z)
+	var pitch := atan2(local.y - 1.6, maxf(flat, 0.001))
+	var yaw_q := Quaternion(Vector3.UP, clampf(yaw, -0.85, 0.85))
+	var pitch_q := Quaternion(Vector3.RIGHT, clampf(-pitch, -0.30, 0.30))
+	_skeleton.set_bone_pose_rotation(_head_bone, yaw_q * pitch_q)
+
+
+func _apply_bone_anomaly(anomaly: Dictionary) -> void:
+	var visual: Dictionary = anomaly.get("visual", {})
+	match str(visual.get("kind", "")):
+		"neck_angle":
+			if _skeleton != null and _neck_bone >= 0:
+				_skeleton.set_bone_pose_rotation(_neck_bone, Quaternion(Vector3.RIGHT, deg_to_rad(-16.0)))
+		"long_hands":
+			if _skeleton != null:
+				if _hand_r_bone >= 0:
+					_skeleton.set_bone_pose_scale(_hand_r_bone, Vector3(1.2, 1.55, 1.15))
+				if _hand_l_bone >= 0:
+					_skeleton.set_bone_pose_scale(_hand_l_bone, Vector3(1.2, 1.55, 1.15))
+		"camera_shape":
+			set_silhouette()
+		"face_swap":
+			set_meta("can_glitch", true)
+		"eye_track":
+			set_meta("eye_track", true)
+		_:
+			pass
