@@ -45,8 +45,12 @@ func _ready() -> void:
 	# Idle pose first, then a mid-stride frame from the walk cycle.
 	_body.animate(0.0, 0.0, Vector3.ZERO)
 	await _wait(0.6)
-	for index in 3:
-		await _capture_from(index * 45.0, "model_idle_%02d" % index)
+	for index in 4:
+		await _capture_from(index * 90.0, "model_view_%02d" % index)
+	var views: Array = []
+	for index in 4:
+		views.append(_dir.path_join("model_view_%02d.png" % index))
+	_write_contact_sheet(views, _dir.path_join("contact.png"))
 	await _capture_portrait("model_portrait")
 	_body.animate(0.0, 1.25, Vector3.ZERO)
 	await _wait(0.55)
@@ -113,7 +117,27 @@ func _capture_from(degrees: float, name: String) -> void:
 		" err=", image.save_png(path))
 
 
-## Head-and-shoulders framing: the only way a small vision model can judge a face.
+## Build a labelled contact sheet so a vision model can answer "which view shows
+## the face" in one shot instead of four separate questions.
+func _write_contact_sheet(paths: Array, out_path: String) -> void:
+	if paths.is_empty():
+		return
+	var first := Image.load_from_file(paths[0])
+	if first == null:
+		return
+	var cell := Vector2i(first.get_width() / 2, first.get_height() / 2)
+	var sheet := Image.create(cell.x * 2, cell.y * 2, false, first.get_format())
+	sheet.fill(Color(0, 0, 0))
+	for index in mini(paths.size(), 4):
+		var image := Image.load_from_file(paths[index])
+		if image == null:
+			continue
+		image.resize(cell.x, cell.y, Image.INTERPOLATE_BILINEAR)
+		var target := Vector2i((index % 2) * cell.x, (index / 2) * cell.y)
+		sheet.blit_rect(image, Rect2i(Vector2i.ZERO, cell), target)
+	sheet.save_png(out_path)
+	print("[MODELSHOT] contact sheet ", out_path)
+
 func _capture_portrait(name: String) -> void:
 	_camera.fov = 32.0
 	_camera.position = Vector3(0.45, 1.62, 1.05)
