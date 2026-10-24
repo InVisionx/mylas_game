@@ -9,6 +9,10 @@ func _ready() -> void:
 	await get_tree().process_frame
 	UpdateManager.check_for_update()
 	var args := OS.get_cmdline_user_args()
+	for arg in args:
+		if arg.begins_with("--modelcheck"):
+			_attach("ModelCheck", "res://scripts/dev/model_check.gd")
+			return
 	var run_soak := "--soak" in args
 	if run_soak:
 		_attach("Soak", "res://scripts/dev/soak_test.gd")

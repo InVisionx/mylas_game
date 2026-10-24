@@ -89,6 +89,11 @@ func _run() -> void:
 	_check("security monitor attached", builder.security_monitor != null)
 	_check("audio library built", AudioManager.has_sound("scan") and AudioManager.has_sound("scream"))
 
+	# Real model drop-ins, when present.
+	if ResourceLoader.exists("res://models/products/milk.glb"):
+		var built := ProductMesh.build(GameData.get_product("milk"))
+		_check("product model loads", built != null and str(built.name).begins_with("Model_milk"), str(built.name) if built else "null")
+
 	# --- Waiting customer ---------------------------------------------------
 	var spawned: Customer = null
 	for i in 500:

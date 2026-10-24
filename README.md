@@ -247,7 +247,8 @@ Art and audio are intentionally procedural, not final. Clean replacement points:
 - **Characters:** `scripts/customer/customer_body.gd` is the only place that builds a body.
   Swap `build()` for a glTF instance and keep the anchor API (`head_anchor`, `hand_anchor`,
   `eyes_anchor`, `animate`, `freeze`, `set_skin_glitch`) and every anomaly keeps working.
-- **Products:** `scripts/items/product_mesh.gd`; swap `build()` for model lookup by product id.
+- **Products:** `scripts/items/product_mesh.gd`; drop a `models/products/<id>.glb` and it is used
+  automatically, scaled to the size in `data/products.json` (see `models/README.md`).
 - **Store:** `scripts/world/store_builder.gd`; each fixture is one function, and
   `scripts/world/store_layout.gd` holds the dimensions the AI depends on.
 - **Audio:** `scripts/autoload/audio_manager.gd` keeps a name → stream dictionary. Replace any

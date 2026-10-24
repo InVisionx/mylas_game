@@ -1,9 +1,16 @@
 class_name ProductMesh
 extends RefCounted
 ## Builds a readable low-poly prop from a product data entry.
+## If a real model exists at res://models/products/<id>.glb it is used instead,
+## scaled to the size declared in data/products.json.
 ## Shapes are deliberately toy-like: distinctive silhouettes beat detail.
 
+const MODEL_DIR := "res://models/products/"
+
 static func build(product: Dictionary, material: Material = null) -> Node3D:
+	var model := _try_model(product)
+	if model != null:
+		return model
 	var root := Node3D.new()
 	var size := _size_of(product)
 	var color := _color_of(product)
@@ -105,3 +112,74 @@ static func _cylinder(radius: float, height: float, material: Material, position
 	instance.position = position
 	instance.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	return instance
+
+
+# --- Real models ------------------------------------------------------------
+
+## Returns a scaled, centred wrapper around res://models/products/<id>.glb, or
+## null when there is no model for this product (procedural fallback wins).
+static func _try_model(product: Dictionary) -> Node3D:
+	var id := str(product.get("id", ""))
+	if id.is_empty():
+		return null
+	var path := MODEL_DIR + id + ".glb"
+	if not ResourceLoader.exists(path):
+		return null
+	var packed := load(path) as PackedScene
+	if packed == null:
+		return null
+	var model := packed.instantiate() as Node3D
+	if model == null:
+		return null
+
+	var root := Node3D.new()
+	root.name = "Model_%s" % id
+	root.add_child(model)
+	_normalise_model(model, _size_of(product))
+	# Optional per-product yaw (degrees) if the label faces the wrong way.
+	var yaw := float(product.get("model_yaw", 0.0))
+	if not is_zero_approx(yaw):
+		model.rotation_degrees.y = yaw
+	_disable_shadows(root)
+	return root
+
+
+static func _normalise_model(model: Node3D, target: Vector3) -> void:
+	var bounds := _bounds(model, Transform3D.IDENTITY)
+	if bounds.size == Vector3.ZERO:
+		return
+	var factor := minf(
+		target.x / maxf(bounds.size.x, 0.0001),
+		minf(target.y / maxf(bounds.size.y, 0.0001), target.z / maxf(bounds.size.z, 0.0001))
+	)
+	if factor <= 0.0 or not is_finite(factor):
+		return
+	model.scale = Vector3.ONE * factor
+	# Centre the model on the item origin so it sits on the belt and in the
+	# collider the same way the procedural prop does.
+	model.position = -bounds.get_center() * factor
+
+
+static func _bounds(node: Node, accum: Transform3D) -> AABB:
+	var result := AABB()
+	var found := false
+	if node is MeshInstance3D and (node as MeshInstance3D).mesh != null:
+		result = accum * (node as MeshInstance3D).get_aabb()
+		found = true
+	for child in node.get_children():
+		var child_transform := accum
+		if child is Node3D:
+			child_transform = accum * (child as Node3D).transform
+		var child_bounds := _bounds(child, child_transform)
+		if child_bounds.size == Vector3.ZERO:
+			continue
+		result = child_bounds if not found else result.merge(child_bounds)
+		found = true
+	return result if found else AABB()
+
+
+static func _disable_shadows(node: Node) -> void:
+	if node is MeshInstance3D:
+		(node as MeshInstance3D).cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	for child in node.get_children():
+		_disable_shadows(child)
