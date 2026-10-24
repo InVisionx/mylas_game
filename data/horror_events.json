@@ -1,0 +1,28 @@
+{
+  "_comment": "Environmental events are atmospheric only. Jumpscares are the consequence of letting an entity leave.",
+  "environmental": [
+    { "id": "lights_flicker",   "min_night": 1, "weight": 3.0, "cooldown": 26.0, "duration": 1.5 },
+    { "id": "fridge_surge",     "min_night": 1, "weight": 2.5, "cooldown": 30.0, "duration": 4.0 },
+    { "id": "distant_steps",    "min_night": 1, "weight": 2.5, "cooldown": 34.0, "duration": 5.0 },
+    { "id": "door_chime",       "min_night": 1, "weight": 2.0, "cooldown": 40.0, "duration": 2.0 },
+    { "id": "shelf_product",    "min_night": 2, "weight": 2.0, "cooldown": 36.0, "duration": 2.5 },
+    { "id": "cart_roll",        "min_night": 2, "weight": 2.0, "cooldown": 38.0, "duration": 3.0 },
+    { "id": "still_customer",   "min_night": 2, "weight": 1.8, "cooldown": 55.0, "duration": 6.0 },
+    { "id": "camera_figure",    "min_night": 2, "weight": 1.6, "cooldown": 60.0, "duration": 3.5 },
+    { "id": "phone_ring",       "min_night": 3, "weight": 1.5, "cooldown": 65.0, "duration": 6.0 },
+    { "id": "whisper",          "min_night": 3, "weight": 1.8, "cooldown": 48.0, "duration": 4.0 },
+    { "id": "power_dip",        "min_night": 3, "weight": 1.4, "cooldown": 70.0, "duration": 3.0 },
+    { "id": "freezer_bang",     "min_night": 3, "weight": 1.6, "cooldown": 52.0, "duration": 2.0 },
+    { "id": "all_lights_out",   "min_night": 4, "weight": 1.2, "cooldown": 80.0, "duration": 4.0 },
+    { "id": "reflection_double", "min_night": 4, "weight": 1.2, "cooldown": 75.0, "duration": 3.0 },
+    { "id": "silence",          "min_night": 2, "weight": 1.0, "cooldown": 90.0, "duration": 7.0 }
+  ],
+  "jumpscares": [
+    { "id": "doorway",  "label": "The Doorway",     "min_night": 1, "weight": 1.0 },
+    { "id": "register", "label": "The Register",    "min_night": 1, "weight": 1.0 },
+    { "id": "lights",   "label": "The Lights",      "min_night": 2, "weight": 1.0 },
+    { "id": "reflection", "label": "The Reflection", "min_night": 3, "weight": 1.0 },
+    { "id": "counter",  "label": "The False Exit",  "min_night": 4, "weight": 1.0 }
+  ],
+  "endless_horror_bonus": 0.15
+}

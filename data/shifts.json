@@ -1,0 +1,95 @@
+{
+  "_comment": "Night tuning. min_obviousness filters which clues spawn (3=only blatant, 1=subtle allowed).",
+  "shifts": [
+    {
+      "index": 1, "name": "Night 1", "title": "Training Shift",
+      "briefing": [
+        "Register boots up at eleven. Customers come in until closing.",
+        "Scan what they put on the belt. Then look at them.",
+        "If something is wrong, refuse the sale. If nothing is wrong, let them pay.",
+        "Trust what you can see. Tonight should be simple."
+      ],
+      "customers": 5, "entity_chance": 0.22, "max_entities": 1, "min_entities": 1,
+      "min_anomalies": 1, "max_anomalies": 1, "min_obviousness": 2,
+      "excluded_focus": ["camera", "reflection", "shadow"],
+      "harmless_trait_chance": 0.10,
+      "items_min": 3, "items_max": 5, "patience_scale": 1.4,
+      "time_limit": 540, "horror_level": 0, "penalty_mode": "warning",
+      "pay_per_customer": 150, "entity_bonus": 1500, "wrong_fine": 250
+    },
+    {
+      "index": 2, "name": "Night 2", "title": "Something Is Wrong",
+      "briefing": [
+        "More traffic tonight. I counted seven names on the book.",
+        "The lights have been doing something. Maintenance says they are fine.",
+        "Checkout anomalies count as evidence. Watch the register screen."
+      ],
+      "customers": 7, "entity_chance": 0.33, "max_entities": 2, "min_entities": 1,
+      "min_anomalies": 1, "max_anomalies": 2, "min_obviousness": 2,
+      "excluded_focus": ["camera", "reflection"],
+      "harmless_trait_chance": 0.20,
+      "items_min": 3, "items_max": 6, "patience_scale": 1.2,
+      "time_limit": 660, "horror_level": 1, "penalty_mode": "fine",
+      "pay_per_customer": 200, "entity_bonus": 2000, "wrong_fine": 350
+    },
+    {
+      "index": 3, "name": "Night 3", "title": "They Are Learning",
+      "briefing": [
+        "Some of them are copying human behaviour now. Badly, but trying.",
+        "Ask questions. Count the pauses. Watch the eyes, not the mouth.",
+        "Innocent people have strange habits too. Do not punish a tattoo."
+      ],
+      "customers": 8, "entity_chance": 0.40, "max_entities": 2, "min_entities": 1,
+      "min_anomalies": 1, "max_anomalies": 2, "min_obviousness": 1,
+      "excluded_focus": ["camera"],
+      "harmless_trait_chance": 0.38,
+      "items_min": 4, "items_max": 7, "patience_scale": 1.0,
+      "time_limit": 720, "horror_level": 2, "penalty_mode": "fine",
+      "pay_per_customer": 250, "entity_bonus": 2500, "wrong_fine": 500
+    },
+    {
+      "index": 4, "name": "Night 4", "title": "Unreliable Evidence",
+      "briefing": [
+        "The camera monitor is working again. Some of them read differently on film.",
+        "Two clues at once, now. Sometimes three. None of them will be loud.",
+        "A wrong refusal costs you the customer's basket. A wrong approval costs more."
+      ],
+      "customers": 9, "entity_chance": 0.45, "max_entities": 3, "min_entities": 2,
+      "min_anomalies": 2, "max_anomalies": 2, "min_obviousness": 1,
+      "excluded_focus": [],
+      "harmless_trait_chance": 0.50,
+      "items_min": 4, "items_max": 7, "patience_scale": 0.9,
+      "time_limit": 780, "horror_level": 3, "penalty_mode": "fail",
+      "pay_per_customer": 300, "entity_bonus": 3000, "wrong_fine": 700
+    },
+    {
+      "index": 5, "name": "Night 5", "title": "The Final Shift",
+      "briefing": [
+        "Nobody scheduled you for tonight. Your name is on the book anyway.",
+        "Three of them, maybe more. One of them is not like the others.",
+        "Finish the shift. Finish it clean."
+      ],
+      "customers": 11, "entity_chance": 0.52, "max_entities": 3, "min_entities": 2,
+      "min_anomalies": 2, "max_anomalies": 3, "min_obviousness": 1,
+      "excluded_focus": [],
+      "harmless_trait_chance": 0.45,
+      "items_min": 5, "items_max": 8, "patience_scale": 0.85,
+      "time_limit": 900, "horror_level": 4, "penalty_mode": "fail",
+      "pay_per_customer": 400, "entity_bonus": 4000, "wrong_fine": 900,
+      "final_entity": true
+    }
+  ],
+
+  "endless": {
+    "base_customers": 8,
+    "customers_per_round": 1.5,
+    "base_entity_chance": 0.42,
+    "entity_chance_per_round": 0.03,
+    "max_entity_chance": 0.65,
+    "base_obviousness": 2,
+    "min_entities": 1,
+    "items_min": 4, "items_max": 7,
+    "time_limit": 720,
+    "pay_per_customer": 300, "entity_bonus": 3000, "wrong_fine": 700
+  }
+}

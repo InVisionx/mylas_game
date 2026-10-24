@@ -1,0 +1,109 @@
+{
+  "_comment": "Personality never determines whether someone is human. Entities sample the same table.",
+  "questions": [
+    { "id": "weather", "label": "Ask about the weather" },
+    { "id": "late",    "label": "Ask why they are out so late" },
+    { "id": "find",    "label": "Ask if they found everything" },
+    { "id": "weird",   "label": "Ask if they noticed anything strange" }
+  ],
+  "personalities": [
+    {
+      "id": "friendly", "label": "Friendly", "speed": 1.05, "patience": 1.2, "talkativeness": 1.0,
+      "greeting": ["Evening! Long night ahead of you, huh?", "Hey there. Quiet in here tonight."],
+      "questions": {
+        "weather": ["Cold one out there. Real cold.", "Raining sideways when I came in. You'd never know in here."],
+        "late": ["Just off a double. Needed something for dinner.", "Can't sleep. Figured I'd shop instead of staring at the ceiling."],
+        "find": ["Found everything. You keep the place nice.", "Yeah, everything but the good bread. You sold out."],
+        "weird": ["Weird? No. Quiet. Which is nice.", "Only thing weird is how empty it is. I'd hate to work a place this empty."]
+      }
+    },
+    {
+      "id": "quiet", "label": "Quiet", "speed": 0.95, "patience": 1.3, "talkativeness": 0.2,
+      "greeting": ["...evening.", "Hi."],
+      "questions": {
+        "weather": ["Cold.", "Yeah."],
+        "late": ["Needed things.", "Long day."],
+        "find": ["Mm.", "Yes."],
+        "weird": ["No.", "...no."]
+      }
+    },
+    {
+      "id": "impatient", "label": "Impatient", "speed": 1.2, "patience": 0.6, "talkativeness": 0.8,
+      "greeting": ["Let's go, let's go.", "I'm in a hurry, okay?"],
+      "questions": {
+        "weather": ["Bad. That's why I'm inside. Scan.", "Does it matter? It's cold."],
+        "late": ["Because I'm busy. Next question.", "Work ran late. Everything runs late."],
+        "find": ["Yes. Scan it.", "I found it. Can we move?"],
+        "weird": ["Everything's weird at this hour. Hurry up.", "You're weird for asking. Scan."]
+      }
+    },
+    {
+      "id": "nervous", "label": "Nervous", "speed": 1.1, "patience": 0.8, "talkativeness": 0.7,
+      "greeting": ["Oh, hi. Sorry. Hi.", "Hi. Um. Hi."],
+      "questions": {
+        "weather": ["It's — it's cold. Yeah. Cold.", "I didn't really look. I ran in."],
+        "late": ["I just — I needed to get out of the house.", "Sorry, is that a weird answer? I couldn't sleep."],
+        "find": ["I think so. I hope so. Did I miss something?", "Yes. No. Maybe. Sorry."],
+        "weird": ["Did you see something? Because I thought — no. Never mind.", "There was someone standing in the aisle when I came in. They're gone now. Probably."]
+      }
+    },
+    {
+      "id": "distracted", "label": "Distracted", "speed": 1.0, "patience": 1.0, "talkativeness": 0.6,
+      "greeting": ["Hm? Oh. Hi.", "Sorry — what?"],
+      "questions": {
+        "weather": ["Huh? Oh. Yeah. Weather.", "Is it raining? I don't remember coming in."],
+        "late": ["Late. Yes. Late for something. Probably.", "I'm out because I'm out. Sorry, what was the question?"],
+        "find": ["Mostly. I keep forgetting why I came.", "Did I get the thing? I don't remember picking it up."],
+        "weird": ["Strange? I don't — hmm. There's something on the floor in aisle three.", "I keep hearing the freezer open. But nobody's there. Anyway."]
+      }
+    },
+    {
+      "id": "rude", "label": "Rude", "speed": 1.1, "patience": 0.5, "talkativeness": 0.7,
+      "greeting": ["Yeah. Scan.", "You gonna stand there or work?"],
+      "questions": {
+        "weather": ["What are you, a weatherman? Scan the food.", "Cold. Like your store. Move."],
+        "late": ["None of your business.", "Why are YOU here this late? Huh?"],
+        "find": ["If I didn't find it I'd say so.", "Everything's where you left it. Unfortunately."],
+        "weird": ["You're the weird thing here.", "Yeah, the cashier who asks too many questions."]
+      }
+    },
+    {
+      "id": "elderly", "label": "Elderly", "speed": 0.72, "patience": 1.6, "talkativeness": 1.1,
+      "greeting": ["Oh, hello dear. Sorry to keep you.", "Evening. My knees don't go fast anymore."],
+      "questions": {
+        "weather": ["Terrible. My hip knows before the forecast does.", "Rain. Or snow. Something wet, I felt it."],
+        "late": ["I don't sleep much anymore. Neither does the cat.", "I've been out all evening. Walking helps the legs."],
+        "find": ["I think so. These old eyes, though.", "I found the tea. The rest is a bonus."],
+        "weird": ["Strange? The lights buzz more than they used to.", "I heard someone breathing behind me in aisle two. Just the fridge, I expect."]
+      }
+    },
+    {
+      "id": "cheerful", "label": "Cheerful", "speed": 1.15, "patience": 1.4, "talkativeness": 1.3,
+      "greeting": ["Hi hi! Oh, I love this store at night.", "Hello! You're the whole staff tonight?"],
+      "questions": {
+        "weather": ["Gorgeous out! Well. Dark. But gorgeous!", "Freezing! I love it. Feels like a movie."],
+        "late": ["Celebrating! New job. Snacks are part of the celebration.", "Couldn't sleep and then I got hungry and here we are!"],
+        "find": ["Found everything and MORE.", "Yes! Although I always buy one thing I didn't plan on."],
+        "weird": ["Weird? Only that it's so quiet! It's kind of great.", "I saw a cart roll by itself. Probably the floor's uneven. Cute, right?"]
+      }
+    },
+    {
+      "id": "calm", "label": "Suspiciously calm", "speed": 1.0, "patience": 2.0, "talkativeness": 0.5,
+      "greeting": ["Good evening.", "Evening. Take your time."],
+      "questions": {
+        "weather": ["I hadn't noticed. It doesn't reach in here.", "The weather is not something I think about."],
+        "late": ["I am here because the store is open.", "Time is not really a factor for me."],
+        "find": ["Everything I need is here. Yes.", "I found precisely what I came for."],
+        "weird": ["Nothing here is strange. Not to me.", "I have noticed a great deal. None of it is strange."]
+      }
+    }
+  ],
+  "entity_lines": {
+    "greeting": ["Good evening. I am here to buy things.", "Hello. I would like to purchase these.", "You are the one behind the counter. Good."],
+    "loop": ["It is a good night. It is a good night. It is a good night.", "Thank you for your service. Thank you for your service."],
+    "wrong_question": ["Your neck is very still when you stand like that.", "The back room is warm. Warmer than here.", "There are four of you behind the glass. No. One."],
+    "wrong": ["I have been here before. You were not.", "You will not remember this in the morning.", "The stockroom door is open. It was not open before.", "Everyone in the aisles is facing the same way."],
+    "knows": ["Your shift ends at four. It is not four yet.", "You counted thirty-six items tonight. You will lose count.", "The camera above you has been off since eleven. I did not do that."],
+    "departing": ["Thank you. I will remember your face.", "Until tomorrow night. I am always here on your shift."]
+  }
+}

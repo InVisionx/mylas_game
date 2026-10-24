@@ -1,0 +1,147 @@
+{
+  "_comment": "focus = inspection focus that reveals it. obviousness 1=subtle 2=clear 3=unmissable. time = seconds of focus needed.",
+  "anomalies": [
+    { "id": "six_fingers", "label": "Extra finger", "category": "visual", "focus": "hands",
+      "description": "The right hand has six fingers. Not a scar or a glove. Six.",
+      "hint": "Zoom on the hands. Count them.",
+      "obviousness": 2, "time": 1.1, "visual": { "kind": "extra_finger" } },
+
+    { "id": "eyes_misaligned", "label": "Misaligned eyes", "category": "visual", "focus": "eyes",
+      "description": "The eyes sit at slightly different heights and look two degrees apart.",
+      "hint": "Zoom on the eyes when they are still.",
+      "obviousness": 2, "time": 1.0, "visual": { "kind": "eye_offset" } },
+
+    { "id": "never_blinks", "label": "Never blinks", "category": "visual", "focus": "eyes",
+      "description": "You watched for a long time. The eyes never closed.",
+      "hint": "Hold on the eyes. Humans blink. Watch.",
+      "obviousness": 1, "time": 3.4, "visual": { "kind": "no_blink" } },
+
+    { "id": "fast_blink", "label": "Blinking too fast", "category": "visual", "focus": "eyes",
+      "description": "It blinks in rapid bursts, like a camera shutter.",
+      "hint": "Hold on the eyes for a few seconds.",
+      "obviousness": 1, "time": 2.6, "visual": { "kind": "fast_blink" } },
+
+    { "id": "wide_smile", "label": "Too-wide smile", "category": "visual", "focus": "mouth",
+      "description": "The smile reaches past the corners of the face, into the jaw.",
+      "hint": "Look at the mouth while it is smiling.",
+      "obviousness": 2, "time": 1.0, "visual": { "kind": "wide_smile" } },
+
+    { "id": "neck_angle", "label": "Impossible neck", "category": "visual", "focus": "neck",
+      "description": "The head turns further than a neck allows, and settles wrong.",
+      "hint": "Watch the neck while the customer turns to look at you.",
+      "obviousness": 3, "time": 0.8, "visual": { "kind": "neck_angle" } },
+
+    { "id": "no_reflection", "label": "No reflection", "category": "visual", "focus": "reflection",
+      "description": "The glass behind the customer throws back the aisle. Nothing else.",
+      "hint": "Use the store windows or the fridges. Reflections are honest.",
+      "obviousness": 2, "time": 1.6, "visual": { "kind": "no_reflection" } },
+
+    { "id": "wrong_shadow", "label": "Wrong shadow", "category": "visual", "focus": "shadow",
+      "description": "The shadow is half a second behind the body. It does not always match it.",
+      "hint": "Look at the floor while the customer moves.",
+      "obviousness": 2, "time": 1.4, "visual": { "kind": "wrong_shadow" } },
+
+    { "id": "long_hands", "label": "Disproportionate hands", "category": "visual", "focus": "hands",
+      "description": "The hands are too long. The fingers reach the wrist of the other arm.",
+      "hint": "Zoom on the hands.",
+      "obviousness": 1, "time": 1.8, "visual": { "kind": "long_hands" } },
+
+    { "id": "face_flickers", "label": "Face changes in the flicker", "category": "visual", "focus": "face",
+      "description": "For one frame, under the failing light, the face was not this face.",
+      "hint": "Use the flickering lights. Look at the face when it stutters.",
+      "obviousness": 2, "time": 1.2, "visual": { "kind": "face_swap" }, "needs_flicker": true },
+
+    { "id": "eyes_track", "label": "Eyes move alone", "category": "visual", "focus": "eyes",
+      "description": "The eyes follow you while the head stays perfectly still.",
+      "hint": "Step sideways while holding focus on the face.",
+      "obviousness": 2, "time": 1.3, "visual": { "kind": "eye_track" } },
+
+    { "id": "uniform_teeth", "label": "Too many teeth", "category": "visual", "focus": "mouth",
+      "description": "Every tooth is identical, and there are more of them than there should be.",
+      "hint": "Zoom on the mouth while the customer speaks.",
+      "obviousness": 2, "time": 1.4, "visual": { "kind": "uniform_teeth" } },
+
+    { "id": "frozen_face", "label": "Frozen expression", "category": "visual", "focus": "face",
+      "description": "Nothing on that face has moved. Not once, through all of it.",
+      "hint": "Hold on the face through a whole conversation.",
+      "obviousness": 1, "time": 3.0, "visual": { "kind": "frozen_face" } },
+
+    { "id": "too_still", "label": "Physically still", "category": "behavioral", "focus": "posture",
+      "description": "Chest, shoulders, hands, all of it. Nothing is breathing.",
+      "hint": "Watch the posture. Breathing is the tell.",
+      "obviousness": 1, "time": 2.8, "visual": { "kind": "no_breath" } },
+
+    { "id": "repeat_sentence", "label": "Repeats the same line", "category": "behavioral", "focus": "behavior",
+      "description": "Ask it anything. It answers with the same sentence, in the same cadence.",
+      "hint": "Talk to them more than once. Listen to the rhythm.",
+      "obviousness": 2, "time": 1.0, "visual": { "kind": "dialogue_loop" } },
+
+    { "id": "wrong_answer", "label": "Answers the wrong question", "category": "behavioral", "focus": "behavior",
+      "description": "You asked about the weather. It answered about the back of your head.",
+      "hint": "Use the dialogue options. Something should not line up.",
+      "obviousness": 2, "time": 1.0, "visual": { "kind": "dialogue_wrong" } },
+
+    { "id": "stares", "label": "Will not stop staring", "category": "behavioral", "focus": "behavior",
+      "description": "It has not looked away from you since it entered. Not once.",
+      "hint": "Let it wait. Watch where the head points.",
+      "obviousness": 2, "time": 2.0, "visual": { "kind": "stare" } },
+
+    { "id": "freezes", "label": "Freezes mid-motion", "category": "behavioral", "focus": "behavior",
+      "description": "It stopped with one hand still lifted, and stayed exactly there.",
+      "hint": "Watch them for a while without saying anything.",
+      "obviousness": 2, "time": 2.4, "visual": { "kind": "freeze" } },
+
+    { "id": "bad_breathing", "label": "Wrong breathing", "category": "behavioral", "focus": "behavior",
+      "description": "The breathing does not come from a chest. It comes from everywhere in the aisle.",
+      "hint": "Listen. Stand close and let the store go quiet.",
+      "obviousness": 1, "time": 2.2, "visual": { "kind": "breath_sound" } },
+
+    { "id": "knows_too_much", "label": "Knows too much", "category": "behavioral", "focus": "behavior",
+      "description": "It mentioned the stockroom door. The one you have never opened tonight.",
+      "hint": "Ask questions that a stranger could not answer.",
+      "obviousness": 3, "time": 0.9, "visual": { "kind": "dialogue_knows" } },
+
+    { "id": "expired", "label": "Impossible date", "category": "checkout", "focus": "items",
+      "description": "The expiry date is next century. Printed properly. Same ink as the rest.",
+      "hint": "Inspect items on the belt before scanning them.",
+      "obviousness": 2, "time": 1.0, "visual": { "kind": "bad_date" } },
+
+    { "id": "barcode_text", "label": "Barcode scans wrong", "category": "checkout", "focus": "register",
+      "description": "The scanner read the barcode and the register printed a word instead of a price.",
+      "hint": "Scan everything. Read what the register says.",
+      "obviousness": 2, "time": 0.9, "visual": { "kind": "register_text" } },
+
+    { "id": "impossible_card", "label": "Impossible card", "category": "checkout", "focus": "payment",
+      "description": "The card bears a name that has no vowels and a date that has already passed.",
+      "hint": "Look at the card when they pay.",
+      "obviousness": 3, "time": 0.9, "visual": { "kind": "card_name" } },
+
+    { "id": "receipt_message", "label": "Message on receipt", "category": "checkout", "focus": "register",
+      "description": "Printed under the total: THANK YOU FOR LETTING ME.",
+      "hint": "Check the receipt after approving.",
+      "obviousness": 3, "time": 0.8, "visual": { "kind": "receipt_text" } },
+
+    { "id": "extra_item", "label": "Item nobody placed", "category": "checkout", "focus": "items",
+      "description": "There is one more item on the belt than they carried, and it is not from the store.",
+      "hint": "Count what was in their basket against what is on the belt.",
+      "obviousness": 2, "time": 1.2, "visual": { "kind": "extra_item" } },
+
+    { "id": "camera_silhouette", "label": "Wrong on camera", "category": "visual", "focus": "camera",
+      "description": "On the security feed the customer is a column of standing dark, taller than the aisle.",
+      "hint": "Watch the security monitor behind the register.",
+      "obviousness": 2, "time": 1.5, "visual": { "kind": "camera_shape" } }
+  ],
+
+  "harmless_traits": [
+    { "id": "tattoo",     "label": "Finger tattoos", "focus": "hands",    "text": "Ink across the knuckles. It spells a name." },
+    { "id": "scar",       "label": "Old scar",        "focus": "face",     "text": "A scar through the eyebrow. Healed years ago." },
+    { "id": "lazy_eye",   "label": "Lazy eye",        "focus": "eyes",     "text": "One eye drifts when they are tired. That happens to people." },
+    { "id": "glass_eye",  "label": "Glass eye",       "focus": "eyes",     "text": "A prosthetic. It does not move. Prosthetics do not." },
+    { "id": "shivers",    "label": "Shivering",       "focus": "posture",  "text": "They are cold. It is the freezer aisle." },
+    { "id": "nervous",    "label": "Nervous hands",   "focus": "hands",    "text": "Rings, tapping, fidgeting. People do that." },
+    { "id": "bandage",    "label": "Bandaged hand",   "focus": "hands",    "text": "A work injury. Two fingers are wrapped out of sight." },
+    { "id": "hearing",    "label": "Hearing aid",     "focus": "face",     "text": "They lean in. They misheard your question." },
+    { "id": "no_brows",   "label": "No eyebrows",     "focus": "face",     "text": "No brows, no lashes. Medical, or just how they are." },
+    { "id": "twitch",     "label": "Eye twitch",      "focus": "eyes",     "text": "A nervous tic. It repeats, and it is harmless." }
+  ]
+}

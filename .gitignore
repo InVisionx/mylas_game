@@ -1,0 +1,13 @@
+# Godot 4 project cache and editor state
+.godot/
+*.uid.tmp
+# Builds (the APK that ships lives in dist/)
+build/
+*.apk
+!dist/*.apk
+*.aab
+*.exe
+# Local logs and screenshots
+*.log
+shot*.png
+_downloads/

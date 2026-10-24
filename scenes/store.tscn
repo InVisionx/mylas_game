@@ -1,0 +1,50 @@
+[gd_scene load_steps=13 format=3]
+
+[ext_resource type="Script" path="res://scripts/world/store.gd" id="1_store"]
+[ext_resource type="Script" path="res://scripts/world/store_builder.gd" id="2_builder"]
+[ext_resource type="PackedScene" path="res://scenes/player/player.tscn" id="3_player"]
+[ext_resource type="Script" path="res://scripts/systems/checkout_manager.gd" id="4_checkout"]
+[ext_resource type="Script" path="res://scripts/systems/shift_manager.gd" id="5_shift"]
+[ext_resource type="Script" path="res://scripts/systems/inspection_manager.gd" id="6_inspect"]
+[ext_resource type="Script" path="res://scripts/horror/horror_director.gd" id="7_horror"]
+[ext_resource type="Script" path="res://scripts/systems/security_monitor.gd" id="8_security"]
+[ext_resource type="Script" path="res://scripts/ui/hud.gd" id="9_hud"]
+[ext_resource type="Script" path="res://scripts/ui/pause_menu.gd" id="10_pause"]
+[ext_resource type="Script" path="res://scripts/ui/notebook_ui.gd" id="11_notebook"]
+[ext_resource type="Script" path="res://scripts/ui/shift_report.gd" id="12_report"]
+
+[node name="Store" type="Node3D"]
+script = ExtResource("1_store")
+
+[node name="StoreBuilder" type="Node3D" parent="."]
+script = ExtResource("2_builder")
+
+[node name="Player" parent="." instance=ExtResource("3_player")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.9, 0, 9.55)
+
+[node name="Checkout" type="Node3D" parent="."]
+script = ExtResource("4_checkout")
+
+[node name="ShiftManager" type="Node" parent="."]
+script = ExtResource("5_shift")
+
+[node name="Inspection" type="Node" parent="."]
+script = ExtResource("6_inspect")
+
+[node name="HorrorDirector" type="Node3D" parent="."]
+script = ExtResource("7_horror")
+
+[node name="SecurityMonitor" type="Node3D" parent="."]
+script = ExtResource("8_security")
+
+[node name="HUD" type="CanvasLayer" parent="."]
+script = ExtResource("9_hud")
+
+[node name="PauseMenu" type="CanvasLayer" parent="."]
+script = ExtResource("10_pause")
+
+[node name="Notebook" type="CanvasLayer" parent="."]
+script = ExtResource("11_notebook")
+
+[node name="ShiftReport" type="CanvasLayer" parent="."]
+script = ExtResource("12_report")
