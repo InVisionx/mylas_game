@@ -9,7 +9,8 @@ extends Node
 signal update_available(info: Dictionary)
 signal update_check_finished(has_update: bool)
 
-const MANIFEST_URL := "https://raw.githubusercontent.com/InVisionx/mylas_game/main/dist/version.json"
+const MANIFEST_API := "https://api.github.com/repos/InVisionx/mylas_game/contents/dist/version.json?ref=main"
+const MANIFEST_RAW := "https://raw.githubusercontent.com/InVisionx/mylas_game/main/dist/version.json"
 const FALLBACK_APK := "https://github.com/InVisionx/mylas_game/raw/main/dist/NightShift-NotHuman.apk"
 
 var current_code := 1
@@ -23,6 +24,7 @@ var check_failed := false
 var _http: HTTPRequest
 var _notified := false
 var _last_check := 0.0
+var _tried_fallback := false
 
 
 func _ready() -> void:
@@ -36,6 +38,7 @@ func check_for_update(force: bool = false) -> void:
 		return
 	checked = true
 	check_failed = false
+	_tried_fallback = false
 	_last_check = Time.get_unix_time_from_system()
 	if _http != null and is_instance_valid(_http):
 		_http.queue_free()
@@ -44,8 +47,17 @@ func check_for_update(force: bool = false) -> void:
 	_http.use_threads = true
 	add_child(_http)
 	_http.request_completed.connect(_on_request_completed)
-	var url := "%s?t=%d" % [MANIFEST_URL, int(Time.get_unix_time_from_system())]
-	var error := _http.request(url)
+	# The contents API is never CDN-cached, so a fresh publish is visible at once.
+	# raw.githubusercontent is the fallback (it caches for a few minutes).
+	_request(MANIFEST_API, [
+		"Accept: application/vnd.github.raw",
+		"X-GitHub-Api-Version: 2022-11-28",
+		"User-Agent: NightShift-Not-Human",
+	])
+
+
+func _request(url: String, headers: Array) -> void:
+	var error := _http.request(url, PackedStringArray(headers))
 	if error != OK:
 		check_failed = true
 		push_warning("UpdateManager: could not start request (%s)" % error)
@@ -54,6 +66,10 @@ func check_for_update(force: bool = false) -> void:
 
 func _on_request_completed(result: int, response_code: int, _headers: PackedStringArray, body: PackedByteArray) -> void:
 	if result != HTTPRequest.RESULT_SUCCESS or response_code != 200:
+		if not _tried_fallback:
+			_tried_fallback = true
+			_request(MANIFEST_RAW, [])
+			return
 		check_failed = true
 		update_check_finished.emit(false)
 		return

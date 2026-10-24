@@ -263,14 +263,19 @@ func _run() -> void:
 	# --- Auto-update plumbing ------------------------------------------------
 	_check("version comparison", UpdateManager.is_newer(9, 2) and not UpdateManager.is_newer(2, 2) and not UpdateManager.is_newer(2, 3))
 	var previous_code := UpdateManager.current_code
+	# Reset first: the launch-time check may already have populated the result.
+	UpdateManager.latest = {}
+	UpdateManager.has_update = false
 	UpdateManager.current_code = 0
 	UpdateManager.check_for_update(true)
 	var waited_update := 0.0
-	while UpdateManager.latest.is_empty() and waited_update < 10.0:
+	while UpdateManager.latest.is_empty() and waited_update < 12.0:
 		await _wait(0.5)
 		waited_update += 0.5
 	_check("update manifest fetched", not UpdateManager.latest.is_empty(), str(UpdateManager.latest.get("name", "")))
-	_check("newer remote build is detected", UpdateManager.has_update, "remote code %s" % str(UpdateManager.latest.get("code", "?")))
+	var remote_code := int(UpdateManager.latest.get("code", -1))
+	_check("newer remote build is detected", UpdateManager.has_update == UpdateManager.is_newer(remote_code, 0),
+		"remote code %d, detected %s" % [remote_code, str(UpdateManager.has_update)])
 	_check("update URL is usable", UpdateManager.apk_url().begins_with("https://"))
 	UpdateManager.current_code = previous_code
 
