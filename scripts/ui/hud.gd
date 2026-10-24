@@ -297,8 +297,10 @@ func _process(delta: float) -> void:
 		if _subtitle_timer <= 0.0:
 			subtitle_label.text = ""
 
-	if dialogue_panel != null and dialogue_panel.visible and InputManager.is_just_pressed("cancel"):
-		close_dialogue()
+	if dialogue_panel != null and dialogue_panel.visible:
+		GameManager.hold_input("dialogue")
+		if InputManager.is_just_pressed("cancel"):
+			close_dialogue()
 
 	_update_prompt()
 	_handle_actions()
@@ -418,11 +420,14 @@ func _refresh_clue_count() -> void:
 func _open_dialogue(customer: Customer) -> void:
 	if customer == null or not is_instance_valid(customer):
 		return
+	# Idempotent: a double tap must not stack modal locks.
+	if dialogue_panel.visible:
+		return
 	_dialogue_customer = customer
 	dialogue_name.text = "%s  -  %s" % [customer.full_name.to_upper(), str(customer.personality.get("label", "")).to_upper()]
 	dialogue_text.text = customer.greeting()
 	dialogue_panel.visible = true
-	GameManager.open_modal()
+	GameManager.open_modal("dialogue")
 	AudioManager.ui("ui_select")
 	_rebuild_questions()
 	var first := _first_question_button()
@@ -435,7 +440,7 @@ func close_dialogue() -> void:
 		return
 	dialogue_panel.visible = false
 	_dialogue_customer = null
-	GameManager.close_modal()
+	GameManager.close_modal("dialogue")
 	AudioManager.ui("ui_back")
 
 

@@ -14,6 +14,8 @@ func _ready() -> void:
 		_attach("Soak", "res://scripts/dev/soak_test.gd")
 	if "--chaos" in args:
 		_attach("Chaos", "res://scripts/dev/chaos_test.gd")
+	if "--inputtest" in args:
+		_attach("InputTest", "res://scripts/dev/input_test.gd")
 	var run_test := "--selftest" in args
 	for arg in args:
 		if arg.begins_with("--night="):

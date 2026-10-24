@@ -17,7 +17,6 @@ func _ready() -> void:
 	visible = false
 	Events.notebook_updated.connect(_refresh)
 
-
 func toggle() -> void:
 	if _open:
 		close()
@@ -30,7 +29,7 @@ func open() -> void:
 		return
 	_open = true
 	visible = true
-	GameManager.open_modal()
+	GameManager.open_modal("notebook")
 	AudioManager.ui("ui_select")
 	_refresh()
 
@@ -40,7 +39,7 @@ func close() -> void:
 		return
 	_open = false
 	visible = false
-	GameManager.close_modal()
+	GameManager.close_modal("notebook")
 	AudioManager.ui("ui_back")
 
 
@@ -81,10 +80,13 @@ func _build() -> void:
 
 
 func _process(_delta: float) -> void:
-	if _open and InputManager.is_just_pressed("cancel"):
-		close()
-	if _open and InputManager.is_just_pressed("notebook"):
-		close()
+	if _open:
+		# Keep the lease alive while the panel is open.
+		GameManager.hold_input("notebook")
+		if InputManager.is_just_pressed("cancel"):
+			close()
+		if InputManager.is_just_pressed("notebook"):
+			close()
 
 
 func _refresh() -> void:

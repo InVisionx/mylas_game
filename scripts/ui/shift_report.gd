@@ -14,6 +14,7 @@ var _last_report: Dictionary = {}
 func _ready() -> void:
 	layer = 50
 	process_mode = Node.PROCESS_MODE_ALWAYS
+	add_to_group("shift_report")
 	Events.shift_ended.connect(_on_shift_ended)
 	_build()
 	visible = false

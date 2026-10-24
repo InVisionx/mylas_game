@@ -55,10 +55,10 @@ func begin(target: Customer) -> void:
 	_revealed_focus.clear()
 	_base_fov = float(SettingsManager.graphics.get("fov", 75.0))
 	if player:
-		player.focus_mode(true)
+		player.focus_mode(true, 1.0)
 		player.set_fov(46.0)
 	_apply_focus()
-	GameManager.open_modal()
+	GameManager.open_modal("inspection")
 	Events.inspection_started.emit(customer.customer_id)
 	inspection_opened.emit(customer)
 
@@ -71,15 +71,23 @@ func end() -> void:
 	if player:
 		player.focus_mode(false)
 		player.set_fov(_base_fov)
-	GameManager.close_modal()
+	GameManager.close_modal("inspection")
 	Events.inspection_ended.emit()
 	inspection_closed.emit()
 	customer = null
 
 
 func _process(delta: float) -> void:
-	if not active or customer == null or not is_instance_valid(customer):
+	if not active:
 		return
+	if customer == null or not is_instance_valid(customer):
+		# The customer vanished mid-inspection (left, was freed, scene changed).
+		end()
+		return
+	# Keep the lease alive while inspecting; it lapses by itself if we die.
+	GameManager.hold_input("inspection")
+	if player:
+		player.focus_mode(true, 0.6)
 
 	if InputManager.is_just_pressed("cancel") or InputManager.is_just_pressed("inspect"):
 		end()

@@ -23,6 +23,12 @@ var session := {}
 var modal_count := 0
 var last_report: Dictionary = {}
 
+## Input locks are leases, not counters: every holder re-asserts each frame and
+## they expire on their own. A crashed, freed or buggy UI can therefore never
+## leave the player without controls.
+const INPUT_LOCK_LEASE_MS := 500
+var _input_locks: Dictionary = {}
+
 var rng := RandomNumberGenerator.new()
 var seed_locked := false
 
@@ -142,16 +148,54 @@ func is_paused() -> bool:
 	return get_tree().paused
 
 
-func open_modal() -> void:
-	modal_count += 1
+func open_modal(key: String = "generic") -> void:
+	hold_input(key)
 
 
-func close_modal() -> void:
-	modal_count = maxi(0, modal_count - 1)
+func close_modal(key: String = "generic") -> void:
+	release_input(key)
+
+
+func hold_input(key: String) -> void:
+	_input_locks[key] = Time.get_ticks_msec() + INPUT_LOCK_LEASE_MS
+
+
+func release_input(key: String) -> void:
+	_input_locks.erase(key)
+
+
+func clear_input_locks() -> void:
+	_input_locks.clear()
 
 
 func is_modal_open() -> bool:
-	return modal_count > 0
+	var now := Time.get_ticks_msec()
+	for key in _input_locks.keys():
+		if int(_input_locks[key]) < now:
+			_input_locks.erase(key)
+	return not _input_locks.is_empty()
+
+
+func active_locks() -> Array:
+	is_modal_open()  # prune
+	return _input_locks.keys()
+
+
+## Watchdog: the tree must never stay paused with no visible pause surface.
+func _process(_delta: float) -> void:
+	if not get_tree().paused:
+		return
+	if _pause_surface_visible():
+		return
+	set_paused(false)
+
+
+func _pause_surface_visible() -> bool:
+	for group in ["pause_menu", "shift_report"]:
+		for node in get_tree().get_nodes_in_group(group):
+			if node is CanvasLayer and node.visible:
+				return true
+	return false
 
 
 # --- Money / scoring --------------------------------------------------------
@@ -239,6 +283,7 @@ func record_decision(approved: bool, was_entity: bool, customer_name: String, ba
 func finish_shift(failed: bool, reason: String = "") -> Dictionary:
 	shift_active = false
 	modal_count = 0
+	clear_input_locks()
 	set_paused(false)
 
 	var total: int = int(session.get("served", 0))

@@ -22,6 +22,10 @@ var can_look := true
 var can_move := true
 var input_locked := false
 
+## Focus is a lease too: inspection and jumpscares refresh it every frame, so a
+## broken sequence can only freeze the player for a fraction of a second.
+var _focus_until_ms := 0
+
 var _pitch := 0.0
 var _bob_time := 0.0
 var _step_accum := 0.0
@@ -53,7 +57,7 @@ func _is_touch_device() -> bool:
 
 
 func _unhandled_input(event: InputEvent) -> void:
-	if not can_look or input_locked or GameManager.is_paused() or GameManager.is_modal_open():
+	if _focus_locked() or input_locked or GameManager.is_paused() or GameManager.is_modal_open():
 		return
 	if event is InputEventMouseMotion and Input.get_mouse_mode() == Input.MOUSE_MODE_CAPTURED:
 		var sens: float = float(SettingsManager.controls["sensitivity"])
@@ -74,7 +78,7 @@ func _physics_process(delta: float) -> void:
 	_update_look(delta)
 
 	var move_input := Vector2.ZERO
-	if can_move and not input_locked and not GameManager.is_paused() and not GameManager.is_modal_open():
+	if can_move and not _focus_locked() and not input_locked and not GameManager.is_paused() and not GameManager.is_modal_open():
 		move_input = InputManager.move_vector()
 
 	var direction := Vector3(move_input.x, 0.0, move_input.y)
@@ -101,7 +105,7 @@ func _physics_process(delta: float) -> void:
 
 
 func _update_look(delta: float) -> void:
-	if not can_look or input_locked or GameManager.is_paused() or GameManager.is_modal_open():
+	if not can_look or _focus_locked() or input_locked or GameManager.is_paused() or GameManager.is_modal_open():
 		return
 	var look := InputManager.look_vector()
 	if look.length() > 0.02:
@@ -236,11 +240,21 @@ func set_fov(value: float) -> void:
 	_fov_base = value
 
 
-func focus_mode(enabled: bool) -> void:
-	can_move = not enabled
-	can_look = not enabled
-	if not enabled:
+func focus_mode(enabled: bool, seconds: float = 1.0) -> void:
+	if enabled:
+		_focus_until_ms = maxi(_focus_until_ms, Time.get_ticks_msec() + int(maxf(seconds, 0.05) * 1000.0))
+	else:
+		_focus_until_ms = 0
 		release_forced_look()
+
+
+func _focus_locked() -> bool:
+	return Time.get_ticks_msec() < _focus_until_ms
+
+
+## Kept for callers that want to know if the player is currently controllable.
+func is_controllable() -> bool:
+	return not _focus_locked() and not input_locked and not GameManager.is_paused() and not GameManager.is_modal_open()
 
 
 func teleport(position: Vector3, look_at_point: Vector3 = Vector3.ZERO) -> void:

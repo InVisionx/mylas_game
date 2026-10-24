@@ -9,6 +9,8 @@ var shift: ShiftManager
 var night := 1
 var _event_timer := 24.0
 var _busy := false
+var _scare_active := false
+var _scare_deadline := 0
 var _last_scare := ""
 var _rng := RandomNumberGenerator.new()
 var _base_energies: Array = []
@@ -27,6 +29,14 @@ func setup(refs: Dictionary) -> void:
 
 
 func _process(delta: float) -> void:
+	# A scare must never outlive its welcome: if the shift ended or the sequence
+	# stalled, drop the locks instead of refreshing them forever.
+	if _scare_active and (not GameManager.shift_active or Time.get_ticks_msec() > _scare_deadline):
+		_abort_scare()
+	if _scare_active:
+		GameManager.hold_input("jumpscare")
+		if is_instance_valid(player):
+			player.focus_mode(true, 0.6)
 	if not GameManager.shift_active or _busy:
 		return
 	_event_timer -= delta
@@ -237,8 +247,10 @@ func play_entity_departure(customer: Customer) -> void:
 		return
 	var kind := _pick_scare()
 	Diagnostics.log_event("jumpscare %s (customer %d)" % [kind, customer.customer_id])
-	GameManager.open_modal()
-	player.focus_mode(true)
+	_scare_active = true
+	_scare_deadline = Time.get_ticks_msec() + 30000
+	GameManager.open_modal("jumpscare")
+	player.focus_mode(true, 1.0)
 	Events.jumpscare_started.emit(kind)
 	AudioManager.loop_set_volume("hum_loop", -60.0, 0.2)
 	AudioManager.loop_set_volume("room_loop", -60.0, 0.2)
@@ -257,11 +269,21 @@ func play_entity_departure(customer: Customer) -> void:
 
 	AudioManager.loop_set_volume("hum_loop", -20.0, 2.0)
 	AudioManager.loop_set_volume("room_loop", -22.0, 2.0)
-	GameManager.close_modal()
+	_scare_active = false
+	GameManager.close_modal("jumpscare")
 	if is_instance_valid(player):
 		player.focus_mode(false)
 		player.release_forced_look()
 	Events.jumpscare_finished.emit(kind)
+
+
+func _abort_scare() -> void:
+	_scare_active = false
+	_scare_deadline = 0
+	GameManager.release_input("jumpscare")
+	if is_instance_valid(player):
+		player.focus_mode(false)
+		player.release_forced_look()
 
 
 func _pick_scare() -> String:

@@ -1,9 +1,9 @@
 {
-    "code":  5,
-    "name":  "0.2.3",
+    "code":  6,
+    "name":  "0.2.4",
     "apk_url":  "https://github.com/InVisionx/mylas_game/raw/main/dist/NightShift-NotHuman.apk",
-    "notes":  "Adds a flight recorder and a DIAGNOSTICS page so crashes can be traced, plus scene-teardown hardening.",
-    "sha256":  "4532135E6E602B64BC8618FF2855C146FCAF894B3D41FA9C56C7623656DE750B",
+    "notes":  "Fixes controls getting stuck after dialogue, inspection, jumpscares or pausing. Added an input-lock self-heal.",
+    "sha256":  "686FEA8A7B5F5EC9F048DC5696A2AB2CD2905C80144C6EF99C7759A2EEF8EB98",
     "size_mb":  25.5,
     "released":  "2026-10-24"
 }
