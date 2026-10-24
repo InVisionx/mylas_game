@@ -26,6 +26,10 @@ The build is arm64-v8a, minSdk 24, signed, ~25 MB. Current file hash is in
 [`dist/SHA256.txt`](dist/SHA256.txt). It only needs to be installed again when a new
 version is posted.
 
+Optional: to serve it from a short release URL
+(`https://github.com/InVisionx/mylas_game/releases/latest/download/NightShift-NotHuman.apk`)
+run `tools\publish_release.ps1` once with a GitHub token; the plain link above needs no setup.
+
 ---
 
 
