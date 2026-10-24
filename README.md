@@ -181,6 +181,33 @@ Android.
 
 ---
 
+## Updating the game
+
+The APK checks GitHub on every launch. If a newer build is published, the main menu shows an
+**UPDATE AVAILABLE** banner with the version and notes; one press opens the download in the
+browser, then tapping the downloaded file installs it over the old build (same signing key, higher
+version code).
+
+Android never lets a sideloaded app install an APK silently — that requires device-owner or root —
+so this is the closest safe flow: automatic detection, one press to download, one confirm to install.
+
+To publish an update:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File tools\publish_update.ps1 -Version 0.3.0 -Notes "What changed"
+```
+
+That bumps `project.godot` + the Android preset, rebuilds `dist/NightShift-NotHuman.apk`, rewrites
+`dist/version.json` (the manifest the game reads), then commits and pushes. Add `-NoPush` to build
+without publishing. Keep the same keystore (`%APPDATA%\Godot\keystores\nightshift.keystore`) or
+Android will refuse to upgrade over the installed copy.
+
+The check reads the GitHub contents API first (never CDN-cached, so a fresh publish is seen
+immediately) and falls back to `raw.githubusercontent.com` (cached a few minutes). It fails
+silently when offline and never blocks play.
+
+---
+
 ## Android / G Cloud
 
 The project is configured for the Mobile renderer, 1920×1080 canvas, landscape, arm64-v8a.
