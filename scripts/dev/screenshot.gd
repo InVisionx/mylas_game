@@ -19,7 +19,11 @@ func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 
 	# Give the shift time to start and a customer to walk in.
-	await _wait(4.0)
+	await _wait(3.0)
+	var shift := get_tree().get_first_node_in_group("shift_manager")
+	if shift != null and shift.has_method("_spawn_customer"):
+		shift.call("_spawn_customer")
+		await _wait(2.5)
 	await _capture("01_wide")
 
 	var customer := _nearest_customer()
