@@ -1,9 +1,9 @@
 {
-    "code":  8,
-    "name":  "0.2.6",
+    "code":  9,
+    "name":  "0.2.7",
     "apk_url":  "https://github.com/InVisionx/mylas_game/raw/main/dist/NightShift-NotHuman.apk",
-    "notes":  "Rigged, animated low-poly customers built in Blender, plus per-customer tinting.",
-    "sha256":  "159D724A5564F922CD50D8FAF0D00F428ACAA3C2BF5F8BE5D14D2F7A57106B3B",
+    "notes":  "Three rigged customer silhouettes, five working fingers and a hidden sixth digit for the anomaly.",
+    "sha256":  "F2AAE9616FEA96A45BAC8D586C2A07225962EEB8AD8225158512DF9F4125A448",
     "size_mb":  27.9,
     "released":  "2026-10-24"
 }

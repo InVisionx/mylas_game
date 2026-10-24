@@ -112,6 +112,15 @@ func _run() -> void:
 	_check("customer uses rigged model", spawned.body.using_model, str(spawned.body.using_model))
 	if spawned.body.using_model:
 		_check("rigged model is animated", spawned.body._anim != null and spawned.body._anim.has_animation("walk"))
+		_check("six fingers are hidden by default", spawned.body._extra_fingers.size() == 4
+			and not spawned.body.extra_fingers_out
+			and spawned.body._skeleton.get_bone_pose_scale(spawned.body._extra_fingers[0]) == Vector3.ZERO)
+		var mutant := CustomerBody.new()
+		add_child(mutant)
+		mutant.build(4242, {"anomalies": [{"visual": {"kind": "extra_finger"}}]})
+		_check("six-finger anomaly reveals digits", mutant.extra_fingers_out
+			and mutant._skeleton.get_bone_pose_scale(mutant._extra_fingers[0]) == Vector3.ONE)
+		mutant.free()
 	_check("customer has basket", spawned.basket.size() >= 3, "%d items" % spawned.basket.size())
 
 	var start_pos := spawned.global_position

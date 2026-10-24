@@ -15,7 +15,17 @@ import struct
 from mathutils import Vector
 
 OUT_DIR = r"C:/Users/mattm/Desktop/mylas game/models/customers"
-OUT_GLB = os.path.join(OUT_DIR, "customer_a.glb")
+
+## Silhouette variants. Bone positions stay identical across variants so the rig
+## and the animations are shared; only the mesh proportions and hair differ.
+SPECS = [
+    {"name": "customer_a", "torso_w": 0.40, "torso_d": 0.24, "belly": 0.0,
+     "arm": 0.11, "leg": 0.14, "head": 0.24, "hair": "flat", "shoulder": 0.24},
+    {"name": "customer_b", "torso_w": 0.48, "torso_d": 0.30, "belly": 0.10,
+     "arm": 0.13, "leg": 0.17, "head": 0.26, "hair": "cap", "shoulder": 0.26},
+    {"name": "customer_c", "torso_w": 0.35, "torso_d": 0.21, "belly": 0.0,
+     "arm": 0.095, "leg": 0.12, "head": 0.225, "hair": "bun", "shoulder": 0.22},
+]
 
 
 def clean():
@@ -39,7 +49,7 @@ def mat(name, color, rough=0.8, metal=0.0):
     return m
 
 
-def build_body():
+def build_body(spec):
     skin_mat = mat("Skin", (0.78, 0.60, 0.47))
     shirt_mat = mat("Shirt", (0.22, 0.30, 0.42))
     pants_mat = mat("Pants", (0.16, 0.17, 0.20))
@@ -49,35 +59,68 @@ def build_body():
 
     parts = []
 
-    def box(name, size, loc, material):
+    def box(name, size, loc, material, group=None):
         bpy.ops.mesh.primitive_cube_add(size=1, location=loc)
         o = bpy.context.object
         o.name = name
         o.scale = (size[0], size[1], size[2])
         bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
         o.data.materials.append(material)
+        if group:
+            vg = o.vertex_groups.new(name=group)
+            vg.add(list(range(len(o.data.vertices))), 1.0, 'REPLACE')
         parts.append(o)
         return o
 
+    torso_w = spec["torso_w"]
+    torso_d = spec["torso_d"]
+    head_s = spec["head"]
+    arm_w = spec["arm"]
+    leg_w = spec["leg"]
+    shoulder_x = spec["shoulder"]
+
     box("Pelvis", (0.32, 0.20, 0.18), (0, 0, 0.99), pants_mat)
-    box("Torso", (0.40, 0.24, 0.42), (0, 0, 1.28), shirt_mat)
+    box("Torso", (torso_w, torso_d, 0.42), (0, 0, 1.28), shirt_mat)
+    if spec["belly"] > 0.0:
+        box("Belly", (torso_w * 0.86, torso_d + spec["belly"], 0.20), (0, 0.02, 1.10), shirt_mat)
     box("NeckGeom", (0.12, 0.12, 0.10), (0, 0, 1.53), skin_mat)
-    box("HeadGeom", (0.24, 0.23, 0.25), (0, 0.005, 1.68), skin_mat)
-    box("HairGeom", (0.25, 0.24, 0.07), (0, -0.005, 1.80), hair_mat)
-    box("Brow", (0.24, 0.05, 0.04), (0, 0.105, 1.745), hair_mat)
-    box("Nose", (0.05, 0.05, 0.05), (0, 0.125, 1.66), skin_mat)
-    box("EyeL", (0.05, 0.02, 0.035), (-0.06, 0.118, 1.70), eye_mat)
-    box("EyeR", (0.05, 0.02, 0.035), (0.06, 0.118, 1.70), eye_mat)
+    box("HeadGeom", (head_s, head_s * 0.96, head_s * 1.04), (0, 0.005, 1.68), skin_mat)
+    box("Brow", (head_s, 0.05, 0.04), (0, head_s * 0.46, 1.745), hair_mat)
+    box("Nose", (0.05, 0.05, 0.05), (0, head_s * 0.53, 1.66), skin_mat)
+    box("EyeL", (0.05, 0.02, 0.035), (-0.06, head_s * 0.5, 1.70), eye_mat)
+    box("EyeR", (0.05, 0.02, 0.035), (0.06, head_s * 0.5, 1.70), eye_mat)
+
+    style = spec["hair"]
+    if style == "flat":
+        box("HairGeom", (head_s + 0.01, head_s, 0.07), (0, -0.005, 1.80), hair_mat)
+    elif style == "cap":
+        box("HairCap", (head_s + 0.02, head_s + 0.01, 0.05), (0, -0.005, 1.805), hair_mat)
+        box("CapBrim", (head_s * 0.9, head_s * 0.5, 0.02), (0, head_s * 0.62, 1.79), hair_mat)
+    else:  # bun
+        box("HairGeom", (head_s + 0.01, head_s, 0.06), (0, -0.005, 1.80), hair_mat)
+        box("Bun", (0.12, 0.12, 0.12), (0, -head_s * 0.5, 1.79), hair_mat)
 
     for s in (-1, 1):
         tag = "L" if s > 0 else "R"
-        box("Shoulder." + tag, (0.10, 0.12, 0.12), (s * 0.24, 0, 1.45), shirt_mat)
-        box("UpperArm." + tag, (0.11, 0.11, 0.30), (s * 0.27, 0, 1.30), shirt_mat)
-        box("LowerArm." + tag, (0.09, 0.09, 0.26), (s * 0.27, 0, 1.02), skin_mat)
-        box("Hand." + tag, (0.08, 0.05, 0.11), (s * 0.27, 0, 0.84), skin_mat)
-        box("Thigh." + tag, (0.14, 0.15, 0.44), (s * 0.10, 0, 0.76), pants_mat)
-        box("Shin." + tag, (0.12, 0.13, 0.42), (s * 0.10, 0, 0.32), pants_mat)
-        box("Foot." + tag, (0.14, 0.24, 0.09), (s * 0.10, 0.05, 0.045), shoe_mat)
+        box("Shoulder." + tag, (arm_w * 0.9, 0.12, 0.12), (s * shoulder_x, 0, 1.45), shirt_mat)
+        box("UpperArm." + tag, (arm_w, arm_w, 0.30), (s * (shoulder_x + 0.03), 0, 1.30), shirt_mat)
+        box("LowerArm." + tag, (arm_w * 0.82, arm_w * 0.82, 0.26), (s * (shoulder_x + 0.03), 0, 1.02), skin_mat)
+        box("Hand." + tag, (0.08, 0.05, 0.11), (s * (shoulder_x + 0.03), 0, 0.84), skin_mat)
+        # Five countable fingers plus two hidden extra digits (six-finger anomaly).
+        for i in range(4):
+            box("Finger%d.%s" % (i, tag), (0.017, 0.022, 0.07),
+                (s * (shoulder_x + 0.03) - 0.028 + i * 0.019, 0.012, 0.775), skin_mat)
+        box("Thumb." + tag, (0.022, 0.022, 0.05),
+            (s * (shoulder_x + 0.075), 0.028, 0.815), skin_mat)
+        box("ExtraFinger0." + tag, (0.018, 0.022, 0.075),
+            (s * (shoulder_x + 0.03) + 0.05 * s, 0.012, 0.772), skin_mat,
+            group="FingerExtra0." + tag)
+        box("ExtraFinger1." + tag, (0.016, 0.020, 0.070),
+            (s * (shoulder_x + 0.03) + 0.068 * s, 0.004, 0.775), skin_mat,
+            group="FingerExtra1." + tag)
+        box("Thigh." + tag, (leg_w, leg_w + 0.01, 0.44), (s * 0.10, 0, 0.76), pants_mat)
+        box("Shin." + tag, (leg_w - 0.02, leg_w - 0.01, 0.42), (s * 0.10, 0, 0.32), pants_mat)
+        box("Foot." + tag, (leg_w, 0.24, 0.09), (s * 0.10, 0.05, 0.045), shoe_mat)
 
     for o in parts:
         o.select_set(True)
@@ -118,6 +161,10 @@ def build_armature():
         bone("UpperArm." + tag, (0.24 * s, 0, 1.46), (0.27 * s, 0, 1.16), "Shoulder." + tag, True)
         bone("LowerArm." + tag, (0.27 * s, 0, 1.16), (0.27 * s, 0, 0.90), "UpperArm." + tag, True)
         bone("Hand." + tag, (0.27 * s, 0, 0.90), (0.27 * s, 0, 0.78), "LowerArm." + tag, True)
+        # Hidden extra digits: the game collapses these to zero scale until the
+        # six-finger anomaly needs them.
+        bone("FingerExtra0." + tag, (0.32 * s, 0, 0.80), (0.32 * s, 0, 0.73), "Hand." + tag)
+        bone("FingerExtra1." + tag, (0.338 * s, 0, 0.80), (0.338 * s, 0, 0.73), "Hand." + tag)
         bone("Thigh." + tag, (0.10 * s, 0, 0.96), (0.10 * s, 0, 0.54), "Hips")
         bone("Shin." + tag, (0.10 * s, 0, 0.54), (0.10 * s, 0, 0.10), "Thigh." + tag, True)
         bone("Foot." + tag, (0.10 * s, 0, 0.10), (0.10 * s, 0.18, 0.04), "Shin." + tag, True)
@@ -144,6 +191,8 @@ def skin(body, rig):
         groups[name] = body.vertex_groups.new(name=name)
 
     for vert in body.data.vertices:
+        if len(vert.groups) > 0:
+            continue  # pre-assigned (extra digits) keeps its own bone
         p = vert.co
         ranked = sorted((dist_to_segment(p, a, b), name) for name, a, b in segments)
         best_d, best_name = ranked[0]
@@ -253,7 +302,7 @@ def build_actions(rig):
     build_action(rig, "walk", walk, 33)
 
 
-def export_glb(rig, body):
+def export_glb(rig, body, out_glb):
     os.makedirs(OUT_DIR, exist_ok=True)
     if rig.animation_data:
         rig.animation_data.action = None
@@ -263,7 +312,7 @@ def export_glb(rig, body):
     bpy.context.view_layer.objects.active = rig
 
     kwargs = dict(
-        filepath=OUT_GLB,
+        filepath=out_glb,
         export_format='GLB',
         use_selection=True,
         export_apply=False,
@@ -276,8 +325,8 @@ def export_glb(rig, body):
         bpy.ops.export_scene.gltf(**kwargs)
     except TypeError as exc:
         print("EXPORT retry without optional params:", exc)
-        bpy.ops.export_scene.gltf(filepath=OUT_GLB, export_format='GLB', use_selection=True)
-    print("EXPORTED %s %d bytes" % (OUT_GLB, os.path.getsize(OUT_GLB)))
+        bpy.ops.export_scene.gltf(filepath=out_glb, export_format='GLB', use_selection=True)
+    print("EXPORTED %s %d bytes" % (out_glb, os.path.getsize(out_glb)))
 
 
 def glb_summary(path):
@@ -303,16 +352,19 @@ def glb_summary(path):
 
 
 def main():
-    clean()
-    body = build_body()
-    print("MESH verts=%d polys=%d materials=%d" % (
-        len(body.data.vertices), len(body.data.polygons), len(body.data.materials)))
-    rig = build_armature()
-    print("RIG bones=%d" % len(rig.data.bones))
-    skin(body, rig)
-    build_actions(rig)
-    export_glb(rig, body)
-    glb_summary(OUT_GLB)
+    for spec in SPECS:
+        out_glb = os.path.join(OUT_DIR, spec["name"] + ".glb")
+        clean()
+        body = build_body(spec)
+        print("MESH %s verts=%d polys=%d materials=%d" % (
+            spec["name"], len(body.data.vertices), len(body.data.polygons),
+            len(body.data.materials)))
+        rig = build_armature()
+        print("RIG %s bones=%d" % (spec["name"], len(rig.data.bones)))
+        skin(body, rig)
+        build_actions(rig)
+        export_glb(rig, body, out_glb)
+        glb_summary(out_glb)
 
 
 main()

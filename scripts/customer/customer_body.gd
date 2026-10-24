@@ -65,9 +65,15 @@ var _frozen := false
 var _materials: Dictionary = {}
 
 ## Real rigged character support. When a glb exists it replaces the primitive
-## body entirely; anomalies that need bone tricks still apply, mesh-deformation
-## ones (fingers, teeth, smile) only exist in the procedural version.
-const MODEL_PATH := "res://models/customers/customer_a.glb"
+## body entirely. Bone tricks cover the anomalies this mesh can express (neck
+## angle, long hands, six fingers, head turns, freeze, glitch); the ones that
+## need facial geometry (teeth, smile, eye offset) only exist on the primitives.
+const MODEL_PATHS := [
+	"res://models/customers/customer_a.glb",
+	"res://models/customers/customer_b.glb",
+	"res://models/customers/customer_c.glb",
+]
+var model_path := ""
 var using_model := false
 var _model_root: Node3D
 var _skeleton: Skeleton3D
@@ -76,6 +82,8 @@ var _head_bone := -1
 var _neck_bone := -1
 var _hand_r_bone := -1
 var _hand_l_bone := -1
+var _extra_fingers: Array[int] = []
+var extra_fingers_out := false
 
 
 func build(seed_value: int, options: Dictionary = {}) -> void:
@@ -86,7 +94,7 @@ func build(seed_value: int, options: Dictionary = {}) -> void:
 	shirt = SHIRT_COLORS[rng.randi_range(0, SHIRT_COLORS.size() - 1)]
 	hair_color = HAIR_COLORS[rng.randi_range(0, HAIR_COLORS.size() - 1)]
 
-	if ResourceLoader.exists(MODEL_PATH) and _build_from_model():
+	if _pick_model() and _build_from_model():
 		_build_shadow()
 		for anomaly in options.get("anomalies", []):
 			apply_anomaly(anomaly)
@@ -99,8 +107,20 @@ func build(seed_value: int, options: Dictionary = {}) -> void:
 		apply_anomaly(anomaly)
 
 
+## Pick one silhouette variant for this customer, if any are installed.
+func _pick_model() -> bool:
+	var available: Array[String] = []
+	for path in MODEL_PATHS:
+		if ResourceLoader.exists(path):
+			available.append(path)
+	if available.is_empty():
+		return false
+	model_path = available[rng.randi_range(0, available.size() - 1)]
+	return true
+
+
 func _build_from_model() -> bool:
-	var packed := load(MODEL_PATH) as PackedScene
+	var packed := load(model_path) as PackedScene
 	if packed == null:
 		return false
 	var model := packed.instantiate() as Node3D
@@ -121,6 +141,12 @@ func _build_from_model() -> bool:
 	_neck_bone = _skeleton.find_bone("Neck")
 	_hand_r_bone = _skeleton.find_bone("Hand.R")
 	_hand_l_bone = _skeleton.find_bone("Hand.L")
+	for name in ["FingerExtra0.L", "FingerExtra0.R", "FingerExtra1.L", "FingerExtra1.R"]:
+		var index := _skeleton.find_bone(name)
+		if index >= 0:
+			_extra_fingers.append(index)
+	_strip_extra_finger_tracks()
+	_apply_finger_visibility()
 
 	_tint_model()
 
@@ -145,6 +171,30 @@ func _find_of_type(node: Node, type_name: String) -> Node:
 		if found != null:
 			return found
 	return null
+
+
+## The clips key every bone's scale, which would force the hidden extra digits
+## back to full size every frame. Drop only those scale tracks so the pose holds.
+func _strip_extra_finger_tracks() -> void:
+	if _anim == null:
+		return
+	for anim_name in _anim.get_animation_list():
+		var anim := _anim.get_animation(anim_name)
+		if anim == null:
+			continue
+		for i in range(anim.get_track_count() - 1, -1, -1):
+			if anim.track_get_type(i) != Animation.TYPE_SCALE_3D:
+				continue
+			if str(anim.track_get_path(i)).contains("FingerExtra"):
+				anim.remove_track(i)
+
+
+func _apply_finger_visibility() -> void:
+	if _skeleton == null:
+		return
+	var target := Vector3.ONE if extra_fingers_out else Vector3.ZERO
+	for index in _extra_fingers:
+		_skeleton.set_bone_pose_scale(index, target)
 
 
 ## Recolour the imported materials so two customers are never identical.
@@ -616,6 +666,8 @@ func _animate_model(delta: float, speed: float, looking_at: Vector3) -> void:
 		_anim.speed_scale = clampf(speed / 1.3, 0.55, 1.9)
 	else:
 		_anim.speed_scale = 1.0
+	if not _extra_fingers.is_empty():
+		_apply_finger_visibility()
 	if looking_at != Vector3.ZERO:
 		_model_head_to(looking_at)
 
@@ -645,6 +697,9 @@ func _apply_bone_anomaly(anomaly: Dictionary) -> void:
 					_skeleton.set_bone_pose_scale(_hand_r_bone, Vector3(1.2, 1.55, 1.15))
 				if _hand_l_bone >= 0:
 					_skeleton.set_bone_pose_scale(_hand_l_bone, Vector3(1.2, 1.55, 1.15))
+		"extra_finger":
+			extra_fingers_out = true
+			_apply_finger_visibility()
 		"camera_shape":
 			set_silhouette()
 		"face_swap":
