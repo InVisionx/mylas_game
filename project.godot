@@ -11,7 +11,7 @@ config_version=5
 [application]
 
 config/name="Night Shift: Not Human"
-config/version="0.2.0"
+config/version="0.2.1"
 config/description="A first-person night-shift horror game. Scan groceries. Watch the customers. Some of them are not people."
 run/main_scene="res://scenes/boot.tscn"
 config/features=PackedStringArray("4.7", "Mobile")
@@ -54,7 +54,7 @@ folder_colors={
 
 [night_shift]
 
-version_code=2
+version_code=3
 
 [layer_names]
 

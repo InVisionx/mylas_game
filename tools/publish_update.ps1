@@ -77,8 +77,8 @@ $manifest = [ordered]@{
     size_mb   = $sizeMb
     released  = (Get-Date).ToString('yyyy-MM-dd')
 }
-$manifest | ConvertTo-Json | Set-Content -Path (Join-Path $root 'dist\version.json') -Encoding utf8
-Write-Text (Join-Path $root 'dist\SHA256.txt') ("SHA256  $hash  NightShift-NotHuman.apk")
+Write-Text (Join-Path $root 'dist\version.json') (($manifest | ConvertTo-Json) + "`n")
+Write-Text (Join-Path $root 'dist\SHA256.txt') ("SHA256  $hash  NightShift-NotHuman.apk`n")
 
 if (-not (Test-Path (Join-Path $root 'dist\version.json'))) { throw 'version.json was not written.' }
 if ((Get-Item (Join-Path $root 'dist\version.json')).Length -lt 40) { throw 'version.json is empty.' }

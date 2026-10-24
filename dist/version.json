@@ -1,9 +1,9 @@
-﻿{
-    "code":  2,
-    "name":  "0.2.0",
+{
+    "code":  3,
+    "name":  "0.2.1",
     "apk_url":  "https://github.com/InVisionx/mylas_game/raw/main/dist/NightShift-NotHuman.apk",
-    "notes":  "Adds launch-time update checks, internet permission, and larger UI text.",
-    "sha256":  "6C6F125D6EF76A1070706214C74CB3CE089F8961BFCFBE3852280F0B4B7F219B",
+    "notes":  "Fixes update manifest parsing and adds the update prompt to the main menu.",
+    "sha256":  "0E1842E8E18B3A642D9273734ED64ABCD333489CEC9BCDBA57888801AA003C1E",
     "size_mb":  25.5,
     "released":  "2026-10-24"
 }

@@ -57,9 +57,15 @@ func _on_request_completed(result: int, response_code: int, _headers: PackedStri
 		check_failed = true
 		update_check_finished.emit(false)
 		return
-	var parsed: Variant = JSON.parse_string(body.get_string_from_utf8())
+	var text := body.get_string_from_utf8()
+	# Tolerate a UTF-8 BOM (PowerShell and some editors add one).
+	if text.length() > 0 and text.unicode_at(0) == 0xFEFF:
+		text = text.substr(1)
+	text = text.strip_edges()
+	var parsed: Variant = JSON.parse_string(text)
 	if typeof(parsed) != TYPE_DICTIONARY:
 		check_failed = true
+		push_warning("UpdateManager: manifest is not valid JSON.")
 		update_check_finished.emit(false)
 		return
 	latest = parsed
