@@ -13,6 +13,14 @@ func _ready() -> void:
 		if arg.begins_with("--modelcheck"):
 			_attach("ModelCheck", "res://scripts/dev/model_check.gd")
 			return
+	for arg in args:
+		if arg.begins_with("--shot"):
+			_attach("Screenshot", "res://scripts/dev/screenshot.gd")
+			return
+	for arg in args:
+		if arg.begins_with("--modelshot"):
+			_attach("ModelShot", "res://scripts/dev/model_shot.gd")
+			return
 	var run_soak := "--soak" in args
 	if run_soak:
 		_attach("Soak", "res://scripts/dev/soak_test.gd")

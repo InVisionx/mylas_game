@@ -89,6 +89,8 @@ var _extra_fingers: Array[int] = []
 var extra_fingers_out := false
 var _walk_clip := ""
 var _idle_clip := ""
+## Test hook: force a specific model, bypassing MODEL_PATHS.
+var model_override := ""
 
 
 func build(seed_value: int, options: Dictionary = {}) -> void:
@@ -117,7 +119,11 @@ func build(seed_value: int, options: Dictionary = {}) -> void:
 ## a remap, and exists() is not a reliable answer there.
 func _try_models() -> bool:
 	var order := MODEL_PATHS.duplicate()
-	order.shuffle()
+	var override := str(model_override)
+	if not override.is_empty():
+		order = [override]
+	else:
+		order.shuffle()
 	for path in order:
 		model_path = path
 		if _build_from_model():
