@@ -5,6 +5,7 @@
 build/
 *.apk
 !dist/*.apk
+*.idsig
 *.aab
 *.exe
 # Local logs and screenshots

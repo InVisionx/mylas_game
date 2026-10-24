@@ -72,6 +72,8 @@ func _ready() -> void:
 	if DisplayServer.is_touchscreen_available() or OS.has_feature("mobile"):
 		_spawn_touch_controls()
 	_refresh_clue_count()
+	UpdateManager.update_available.connect(func(_info): UpdateManager.notify_once())
+	UpdateManager.notify_once()
 
 
 func _build() -> void:

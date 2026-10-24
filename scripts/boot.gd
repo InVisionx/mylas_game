@@ -7,6 +7,7 @@ extends Node
 
 func _ready() -> void:
 	await get_tree().process_frame
+	UpdateManager.check_for_update()
 	var args := OS.get_cmdline_user_args()
 	var run_test := "--selftest" in args
 	for arg in args:

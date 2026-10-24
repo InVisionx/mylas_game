@@ -260,6 +260,20 @@ func _run() -> void:
 	_check("rejecting a human is fined", int(GameManager.session.get("penalty", 0)) > fine_before)
 	_check("rejection counted as served", int(GameManager.session.get("served", 0)) == served_pre_reject + 1)
 
+	# --- Auto-update plumbing ------------------------------------------------
+	_check("version comparison", UpdateManager.is_newer(9, 2) and not UpdateManager.is_newer(2, 2) and not UpdateManager.is_newer(2, 3))
+	var previous_code := UpdateManager.current_code
+	UpdateManager.current_code = 0
+	UpdateManager.check_for_update(true)
+	var waited_update := 0.0
+	while UpdateManager.latest.is_empty() and waited_update < 10.0:
+		await _wait(0.5)
+		waited_update += 0.5
+	_check("update manifest fetched", not UpdateManager.latest.is_empty(), str(UpdateManager.latest.get("name", "")))
+	_check("newer remote build is detected", UpdateManager.has_update, "remote code %s" % str(UpdateManager.latest.get("code", "?")))
+	_check("update URL is usable", UpdateManager.apk_url().begins_with("https://"))
+	UpdateManager.current_code = previous_code
+
 	_finish()
 
 

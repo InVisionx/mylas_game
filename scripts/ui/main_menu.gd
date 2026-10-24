@@ -8,6 +8,10 @@ var _settings_page: VBoxContainer
 var _title: Label
 var _subtitle: Label
 var _notebook: NotebookUI
+var _update_bar: PanelContainer
+var _update_title: Label
+var _update_notes: Label
+var _update_status: Label
 
 
 func _ready() -> void:
@@ -16,8 +20,16 @@ func _ready() -> void:
 	get_tree().paused = false
 	GameManager.set_paused(false)
 	_build()
+	_build_update_banner()
+	_build_version_label()
 	AudioManager.set_tension(1)
 	_show_page("main")
+	if UpdateManager.has_update:
+		_show_update(UpdateManager.latest)
+	else:
+		UpdateManager.update_available.connect(_show_update)
+		UpdateManager.update_check_finished.connect(_on_update_check_finished)
+	UpdateManager.refresh_if_stale()
 
 
 func _build() -> void:
@@ -74,6 +86,65 @@ func _build() -> void:
 	_build_main()
 	_build_shifts()
 	_build_settings()
+
+
+func _build_update_banner() -> void:
+	_update_bar = UIKit.panel_container(Color(0.06, 0.10, 0.09, 0.96), UIKit.ACCENT)
+	_update_bar.set_anchors_preset(Control.PRESET_TOP_RIGHT)
+	_update_bar.position = Vector2(-660, 28)
+	_update_bar.custom_minimum_size = Vector2(620, 0)
+	_update_bar.visible = false
+	add_child(_update_bar)
+
+	var box := UIKit.vbox(8)
+	_update_bar.add_child(box)
+	_update_title = UIKit.label("UPDATE AVAILABLE", 32, UIKit.ACCENT)
+	box.add_child(_update_title)
+	_update_notes = UIKit.label("", 24, UIKit.TEXT)
+	_update_notes.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_update_notes.custom_minimum_size = Vector2(560, 0)
+	box.add_child(_update_notes)
+	var button := UIKit.button("DOWNLOAD UPDATE", 30)
+	button.pressed.connect(_open_update)
+	box.add_child(button)
+
+
+func _build_version_label() -> void:
+	var label := UIKit.label(UpdateManager.version_label(), 20, Color(0.40, 0.46, 0.50))
+	label.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
+	label.position = Vector2(-420, -46)
+	add_child(label)
+
+
+func _show_update(info: Dictionary) -> void:
+	var name := str(info.get("name", "")).strip_edges()
+	_update_title.text = "UPDATE AVAILABLE  v%s" % name if not name.is_empty() else "UPDATE AVAILABLE"
+	var notes := str(info.get("notes", "")).strip_edges()
+	_update_notes.text = notes if not notes.is_empty() else "A newer build is on GitHub. Download it, then open the file to install over this one."
+	_update_bar.visible = true
+	if _update_status != null:
+		_update_status.text = "UPDATE FOUND"
+		_update_status.add_theme_color_override("font_color", UIKit.ACCENT)
+
+
+func _open_update() -> void:
+	UpdateManager.open_update()
+	if _update_status != null:
+		_update_status.text = "DOWNLOAD OPENED IN BROWSER"
+
+
+func _on_update_check_finished(has_update: bool) -> void:
+	if _update_status == null:
+		return
+	_update_status.text = "UPDATE FOUND" if has_update else "UP TO DATE"
+	_update_status.add_theme_color_override("font_color", UIKit.ACCENT if has_update else UIKit.TEXT_DIM)
+
+
+func _check_for_updates() -> void:
+	UpdateManager.refresh()
+	if _update_status != null:
+		_update_status.text = "CHECKING..."
+		_update_status.add_theme_color_override("font_color", UIKit.WARN)
 
 
 func _build_main() -> void:
@@ -174,6 +245,14 @@ func _build_settings() -> void:
 	var back := UIKit.button("BACK", 26)
 	back.pressed.connect(_show_page.bind("main"))
 	_settings_page.add_child(back)
+
+	var update_header := UIKit.label("UPDATES", 24, UIKit.TEXT_DIM)
+	_settings_page.add_child(update_header)
+	var check_updates := UIKit.button("CHECK FOR UPDATES", 30)
+	check_updates.pressed.connect(_check_for_updates)
+	_settings_page.add_child(check_updates)
+	_update_status = UIKit.label("BUILD %d  ·  v%s" % [UpdateManager.current_code, UpdateManager.current_name], 22, UIKit.TEXT_DIM)
+	_settings_page.add_child(_update_status)
 
 
 func _show_page(page: String) -> void:
