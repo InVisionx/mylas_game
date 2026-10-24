@@ -73,6 +73,9 @@ const MODEL_PATHS := [
 ]
 ## Height the model is normalised to before the per-customer height variation.
 const MODEL_HEIGHT := 1.78
+## This export faces +Z (toes measured at +0.18 in bind space); the game's forward
+## is -Z, so the model is turned around to walk the way it is moving.
+const MODEL_YAW_DEG := 180.0
 var model_path := ""
 var using_model := false
 var _model_root: Node3D
@@ -154,7 +157,7 @@ func _build_from_model() -> bool:
 	torso = _anchor_for_bone(2, Vector3.ZERO, Vector3(0.0, 1.15, 0.0))
 	hand_r = _anchor_for_bone(_hand_r_bone, Vector3.ZERO, Vector3(-0.25, 0.95, 0.0))
 	hand_l = _anchor_for_bone(_hand_l_bone, Vector3.ZERO, Vector3(0.25, 0.95, 0.0))
-	mouth = _anchor_for_bone(_head_bone, Vector3(0.0, -0.08, 0.10), Vector3(0.0, 1.58, 0.10))
+	mouth = _anchor_for_bone(_head_bone, Vector3(0.0, -0.08, -0.10), Vector3(0.0, 1.58, -0.10))
 	if _anim != null and not _idle_clip.is_empty():
 		_anim.play(_idle_clip)
 	using_model = true
@@ -188,6 +191,7 @@ func _normalise_model(model: Node3D) -> void:
 	# Bones stop at the skull joint, so aim slightly under the full body height.
 	var fit := (MODEL_HEIGHT * height_scale * 0.94) / bounds.size.y
 	model.scale = Vector3(fit * body_width, fit, fit * body_width)
+	model.rotation.y = deg_to_rad(MODEL_YAW_DEG)
 	model.position.y = (-bounds.position.y + 0.03) * model.scale.y
 
 
@@ -835,10 +839,12 @@ func _model_head_to(point: Vector3) -> void:
 		return
 	var local := global_transform.affine_inverse() * point
 	var flat := Vector2(local.x, local.z).length()
-	var yaw := atan2(-local.x, -local.z)
+	# The model root is turned around, so the head bone's own frame is too.
+	var yaw := atan2(-local.x, -local.z) - deg_to_rad(MODEL_YAW_DEG)
 	var pitch := atan2(local.y - 1.6, maxf(flat, 0.001))
+	var flip := -1.0 if MODEL_YAW_DEG > 90.0 else 1.0
 	var yaw_q := Quaternion(Vector3.UP, clampf(yaw, -0.85, 0.85))
-	var pitch_q := Quaternion(Vector3.RIGHT, clampf(-pitch, -0.30, 0.30))
+	var pitch_q := Quaternion(Vector3.RIGHT, flip * clampf(-pitch, -0.30, 0.30))
 	_skeleton.set_bone_pose_rotation(_head_bone, yaw_q * pitch_q)
 
 
