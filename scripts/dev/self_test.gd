@@ -110,17 +110,20 @@ func _run() -> void:
 		return
 	_check("customer has generated body", spawned.body != null and spawned.body.head != null)
 	_check("customer uses rigged model", spawned.body.using_model, str(spawned.body.using_model))
+	_check("customer wears exactly one body", _body_count(spawned) == 1, "bodies=%d" % _body_count(spawned))
 	if spawned.body.using_model:
-		_check("rigged model is animated", spawned.body._anim != null and spawned.body._anim.has_animation("walk"))
-		_check("six fingers are hidden by default", spawned.body._extra_fingers.size() == 4
-			and not spawned.body.extra_fingers_out
-			and spawned.body._skeleton.get_bone_pose_scale(spawned.body._extra_fingers[0]) == Vector3.ZERO)
-		var mutant := CustomerBody.new()
-		add_child(mutant)
-		mutant.build(4242, {"anomalies": [{"visual": {"kind": "extra_finger"}}]})
-		_check("six-finger anomaly reveals digits", mutant.extra_fingers_out
-			and mutant._skeleton.get_bone_pose_scale(mutant._extra_fingers[0]) == Vector3.ONE)
-		mutant.free()
+		_check("rigged model is animated", spawned.body._anim != null and spawned.body._anim.current_animation != "")
+		var head_y := spawned.body.head.global_position.y
+		_check("rigged model stands at human height", head_y > 1.3 and head_y < 2.15, "head_y=%.2f" % head_y)
+		if spawned.body._extra_fingers.size() == 4:
+			_check("six fingers are hidden by default", not spawned.body.extra_fingers_out
+				and spawned.body._skeleton.get_bone_pose_scale(spawned.body._extra_fingers[0]) == Vector3.ZERO)
+			var mutant := CustomerBody.new()
+			add_child(mutant)
+			mutant.build(4242, {"anomalies": [{"visual": {"kind": "extra_finger"}}]})
+			_check("six-finger anomaly reveals digits", mutant.extra_fingers_out
+				and mutant._skeleton.get_bone_pose_scale(mutant._extra_fingers[0]) == Vector3.ONE)
+			mutant.free()
 	_check("customer has basket", spawned.basket.size() >= 3, "%d items" % spawned.basket.size())
 
 	var start_pos := spawned.global_position
@@ -306,6 +309,17 @@ func _count_meshes(node: Node) -> int:
 	for child in node.get_children():
 		total += _count_meshes(child)
 	return total
+
+
+## A customer must wear exactly one body: shift_manager adds the node to the tree
+## before configure(), so _ready() builds a placeholder that must be replaced,
+## never stacked.
+func _body_count(customer: Customer) -> int:
+	var count := 0
+	for child in customer.get_children():
+		if child is CustomerBody:
+			count += 1
+	return count
 
 
 func _finish() -> void:

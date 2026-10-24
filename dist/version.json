@@ -1,9 +1,9 @@
 {
-    "code":  9,
-    "name":  "0.2.7",
+    "code":  10,
+    "name":  "0.2.8",
     "apk_url":  "https://github.com/InVisionx/mylas_game/raw/main/dist/NightShift-NotHuman.apk",
-    "notes":  "Three rigged customer silhouettes, five working fingers and a hidden sixth digit for the anomaly.",
-    "sha256":  "F2AAE9616FEA96A45BAC8D586C2A07225962EEB8AD8225158512DF9F4125A448",
-    "size_mb":  27.9,
+    "notes":  "Real rigged customer model with walk and idle clips. Fixed doubled customer bodies and the input lock that never released.",
+    "sha256":  "6DA88A5EE2D72E40D095EFDA76506433FFB23420B3F8B4B3BF065E252B663067",
+    "size_mb":  32.6,
     "released":  "2026-10-24"
 }

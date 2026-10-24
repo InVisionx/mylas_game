@@ -10,11 +10,15 @@ func _ready() -> void:
 		if arg.begins_with("--modelcheck="):
 			id = arg.get_slice("=", 1)
 
+	if id == "body":
+		_check_body()
+		get_tree().quit(0)
+		return
+
 	if id.begins_with("customer"):
 		_check_customer(id)
 		get_tree().quit(0)
 		return
-
 	var path := "res://models/products/%s.glb" % id
 	print("[MODEL] exists=", ResourceLoader.exists(path), " path=", path)
 	if ResourceLoader.exists(path):
@@ -51,6 +55,29 @@ func _dump(node: Node, depth: int) -> void:
 	print("[MODEL] %s%s (%s)" % [pad, node.name, node.get_class()])
 	for child in node.get_children():
 		_dump(child, depth + 1)
+
+
+##   godot --headless --path . -- --modelcheck=body
+## Builds a customer body and reports what the loader resolved: is the rig in
+## use, which bones were found, which clips, and where the anchors ended up.
+func _check_body() -> void:
+	var body := CustomerBody.new()
+	add_child(body)
+	body.build(99, {})
+	print("[BODY] using_model=", body.using_model, " path=", body.model_path)
+	print("[BODY] head_bone=", body._head_bone, " neck_bone=", body._neck_bone,
+		" hands=", body._hand_l_bone, "/", body._hand_r_bone)
+	print("[BODY] walk=", body._walk_clip, " idle=", body._idle_clip)
+	print("[BODY] meshes=", body.find_children("*", "MeshInstance3D", true, false).size())
+	if body._model_root != null:
+		print("[BODY] model scale=", body._model_root.scale, " y=", body._model_root.position.y)
+	print("[BODY] head=", body.head.global_position if body.head else "null",
+		" hand_l=", body.hand_l.global_position if body.hand_l else "null",
+		" hand_r=", body.hand_r.global_position if body.hand_r else "null")
+	print("[BODY] anomaly probe: applying extra_finger")
+	body.apply_anomaly({"visual": {"kind": "extra_finger"}})
+	print("[BODY] extra_fingers=", body._extra_fingers.size(), " out=", body.extra_fingers_out)
+	body.free()
 
 
 ##   godot --headless --path . -- --modelcheck=customer_b

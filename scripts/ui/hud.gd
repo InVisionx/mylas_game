@@ -244,6 +244,8 @@ func _build_dialogue_panel() -> void:
 	dialogue_panel.position = Vector2(-520, -360)
 	dialogue_panel.custom_minimum_size = Vector2(1040, 0)
 	dialogue_panel.visible = false
+	# Overlay only: touches must still reach the on-screen pad underneath.
+	dialogue_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	root.add_child(dialogue_panel)
 
 	var box := UIKit.vbox(10)
@@ -298,9 +300,14 @@ func _process(delta: float) -> void:
 			subtitle_label.text = ""
 
 	if dialogue_panel != null and dialogue_panel.visible:
-		GameManager.hold_input("dialogue")
-		if InputManager.is_just_pressed("cancel"):
+		# If the person you were talking to vanished (left, was freed, shift over)
+		# the panel used to stay up forever, which refreshed the lock forever.
+		if _dialogue_customer == null or not is_instance_valid(_dialogue_customer) or not GameManager.shift_active:
 			close_dialogue()
+		else:
+			GameManager.hold_input("dialogue")
+			if InputManager.is_just_pressed("cancel"):
+				close_dialogue()
 
 	_update_prompt()
 	_handle_actions()

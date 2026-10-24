@@ -27,7 +27,11 @@ var last_report: Dictionary = {}
 ## they expire on their own. A crashed, freed or buggy UI can therefore never
 ## leave the player without controls.
 const INPUT_LOCK_LEASE_MS := 500
+## A single holder may refresh a lock for this long before the watchdog asks
+## whether the thing holding it is actually still on screen.
+const INPUT_LOCK_MAX_MS := 6000
 var _input_locks: Dictionary = {}
+var _input_lock_born: Dictionary = {}
 
 var rng := RandomNumberGenerator.new()
 var seed_locked := false
@@ -157,15 +161,19 @@ func close_modal(key: String = "generic") -> void:
 
 
 func hold_input(key: String) -> void:
+	if not _input_locks.has(key):
+		_input_lock_born[key] = Time.get_ticks_msec()
 	_input_locks[key] = Time.get_ticks_msec() + INPUT_LOCK_LEASE_MS
 
 
 func release_input(key: String) -> void:
 	_input_locks.erase(key)
+	_input_lock_born.erase(key)
 
 
 func clear_input_locks() -> void:
 	_input_locks.clear()
+	_input_lock_born.clear()
 
 
 func is_modal_open() -> bool:
@@ -183,11 +191,58 @@ func active_locks() -> Array:
 
 ## Watchdog: the tree must never stay paused with no visible pause surface.
 func _process(_delta: float) -> void:
+	_prune_and_watch_input()
 	if not get_tree().paused:
 		return
 	if _pause_surface_visible():
 		return
 	set_paused(false)
+
+
+## Nothing may hold the player's controls hostage. A lock that has been refreshed
+## for longer than INPUT_LOCK_MAX_MS is only allowed to stand if whatever owns it
+## is still on screen; otherwise it is dropped and logged to the flight recorder.
+func _prune_and_watch_input() -> void:
+	if _input_locks.is_empty():
+		return
+	var now := Time.get_ticks_msec()
+	for key in _input_locks.keys():
+		if int(_input_locks[key]) < now:
+			_input_locks.erase(key)
+			_input_lock_born.erase(key)
+			continue
+		var age := now - int(_input_lock_born.get(key, now))
+		if age > INPUT_LOCK_MAX_MS and not _lock_owner_present(str(key)):
+			_input_locks.erase(key)
+			_input_lock_born.erase(key)
+			Diagnostics.log_event("input lock '%s' force-released after %d s (owner gone)"
+				% [str(key), age / 1000])
+
+
+func _lock_owner_present(key: String) -> bool:
+	match key:
+		"inspection":
+			var manager := get_tree().get_first_node_in_group("inspection_manager")
+			return manager != null and bool(manager.get("active"))
+		"jumpscare":
+			var director := get_tree().get_first_node_in_group("horror_director")
+			return director != null and bool(director.get("_scare_active"))
+		"notebook":
+			for node in get_tree().get_nodes_in_group("notebook"):
+				if node is CanvasLayer and node.visible:
+					return true
+			return false
+		"dialogue":
+			for node in get_tree().root.find_children("*", "", true, false):
+				if node is Control and node.visible and str(node.name).to_lower().contains("dialogue"):
+					return true
+			return false
+		"pause", "generic":
+			return _pause_surface_visible()
+		_:
+			# Unknown key: fail open. Holding a player hostage because we cannot
+			# identify the owner is worse than dropping a stale lock.
+			return false
 
 
 func _pause_surface_visible() -> bool:

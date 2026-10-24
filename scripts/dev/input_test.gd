@@ -137,6 +137,15 @@ func _run() -> void:
 	await _wait(0.2)
 	_check("shift end clears locks", not GameManager.is_modal_open(), str(GameManager.active_locks()))
 
+	# 9. Watchdog: a lock whose owner is gone is force-released, even if the
+	# holder is still refreshing it. This is what used to leave the player frozen.
+	GameManager.hold_input("ghost")
+	GameManager._input_lock_born["ghost"] = Time.get_ticks_msec() - 9000
+	GameManager._prune_and_watch_input()
+	await _wait(0.1)
+	_check("orphaned lock is force-released", not GameManager.active_locks().has("ghost"),
+		str(GameManager.active_locks()))
+
 	print("----- INPUT TEST: %d checks, %d failures -----" % [_checks, _failures])
 	get_tree().quit(0 if _failures == 0 else 1)
 

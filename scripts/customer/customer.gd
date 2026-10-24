@@ -137,6 +137,12 @@ func configure(id: int, shift: Dictionary, rng: RandomNumberGenerator, force_ent
 
 
 func _build_body(rng: RandomNumberGenerator) -> void:
+	# _ready() builds a placeholder when configure() has not run yet; configure()
+	# then rebuilds with the real seed. Drop the placeholder or the customer ends
+	# up wearing two bodies at once.
+	if body != null and is_instance_valid(body):
+		remove_child(body)
+		body.queue_free()
 	body = CustomerBody.new()
 	body.name = "Body"
 	add_child(body)

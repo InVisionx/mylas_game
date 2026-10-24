@@ -64,15 +64,15 @@ var _walk_blend := 0.0
 var _frozen := false
 var _materials: Dictionary = {}
 
-## Real rigged character support. When a glb exists it replaces the primitive
-## body entirely. Bone tricks cover the anomalies this mesh can express (neck
-## angle, long hands, six fingers, head turns, freeze, glitch); the ones that
-## need facial geometry (teeth, smile, eye offset) only exist on the primitives.
+## Real rigged characters. Any glb listed here is tried in turn; the first one
+## that loads replaces the primitive body. Bone tricks cover the anomalies these
+## meshes can express (neck angle, long hands, head turns, freeze, glitch); the
+## ones that need facial geometry only exist on the primitive fallback.
 const MODEL_PATHS := [
-	"res://models/customers/customer_a.glb",
-	"res://models/customers/customer_b.glb",
-	"res://models/customers/customer_c.glb",
+	"res://models/customers/customer_man.glb",
 ]
+## Height the model is normalised to before the per-customer height variation.
+const MODEL_HEIGHT := 1.78
 var model_path := ""
 var using_model := false
 var _model_root: Node3D
@@ -84,6 +84,8 @@ var _hand_r_bone := -1
 var _hand_l_bone := -1
 var _extra_fingers: Array[int] = []
 var extra_fingers_out := false
+var _walk_clip := ""
+var _idle_clip := ""
 
 
 func build(seed_value: int, options: Dictionary = {}) -> void:
@@ -94,7 +96,7 @@ func build(seed_value: int, options: Dictionary = {}) -> void:
 	shirt = SHIRT_COLORS[rng.randi_range(0, SHIRT_COLORS.size() - 1)]
 	hair_color = HAIR_COLORS[rng.randi_range(0, HAIR_COLORS.size() - 1)]
 
-	if _pick_model() and _build_from_model():
+	if _try_models():
 		_build_shadow()
 		for anomaly in options.get("anomalies", []):
 			apply_anomaly(anomaly)
@@ -107,16 +109,18 @@ func build(seed_value: int, options: Dictionary = {}) -> void:
 		apply_anomaly(anomaly)
 
 
-## Pick one silhouette variant for this customer, if any are installed.
-func _pick_model() -> bool:
-	var available: Array[String] = []
-	for path in MODEL_PATHS:
-		if ResourceLoader.exists(path):
-			available.append(path)
-	if available.is_empty():
-		return false
-	model_path = available[rng.randi_range(0, available.size() - 1)]
-	return true
+## Try every installed model. load() is used directly instead of gating on
+## ResourceLoader.exists(): in an exported build an imported .glb resolves through
+## a remap, and exists() is not a reliable answer there.
+func _try_models() -> bool:
+	var order := MODEL_PATHS.duplicate()
+	order.shuffle()
+	for path in order:
+		model_path = path
+		if _build_from_model():
+			return true
+	model_path = ""
+	return false
 
 
 func _build_from_model() -> bool:
@@ -127,7 +131,6 @@ func _build_from_model() -> bool:
 	if model == null:
 		return false
 	model.name = "Model"
-	model.scale = Vector3(body_width, height_scale, body_width)
 	add_child(model)
 	_model_root = model
 
@@ -135,32 +138,177 @@ func _build_from_model() -> bool:
 	_anim = _find_of_type(model, "AnimationPlayer") as AnimationPlayer
 	if _skeleton == null:
 		model.queue_free()
+		_model_root = null
 		return false
 
-	_head_bone = _skeleton.find_bone("Head")
-	_neck_bone = _skeleton.find_bone("Neck")
-	_hand_r_bone = _skeleton.find_bone("Hand.R")
-	_hand_l_bone = _skeleton.find_bone("Hand.L")
-	for name in ["FingerExtra0.L", "FingerExtra0.R", "FingerExtra1.L", "FingerExtra1.R"]:
-		var index := _skeleton.find_bone(name)
-		if index >= 0:
-			_extra_fingers.append(index)
+	_normalise_model(model)
+	_resolve_bones()
+	_resolve_clips()
+
 	_strip_extra_finger_tracks()
 	_apply_finger_visibility()
-
 	_tint_model()
 
-	head = _bone_anchor("Head", Vector3.ZERO)
-	neck = _bone_anchor("Neck", Vector3.ZERO)
-	torso = _bone_anchor("Chest", Vector3.ZERO)
-	hand_r = _bone_anchor("Hand.R", Vector3.ZERO)
-	hand_l = _bone_anchor("Hand.L", Vector3.ZERO)
-	mouth = _bone_anchor("Head", Vector3(0.0, -0.075, 0.115))
-	if _anim != null:
-		if _anim.has_animation("idle"):
-			_anim.play("idle")
+	head = _anchor_for_bone(_head_bone, Vector3.ZERO, Vector3(0.0, 1.62, 0.0))
+	neck = _anchor_for_bone(_neck_bone, Vector3.ZERO, Vector3(0.0, 1.45, 0.0))
+	torso = _anchor_for_bone(2, Vector3.ZERO, Vector3(0.0, 1.15, 0.0))
+	hand_r = _anchor_for_bone(_hand_r_bone, Vector3.ZERO, Vector3(-0.25, 0.95, 0.0))
+	hand_l = _anchor_for_bone(_hand_l_bone, Vector3.ZERO, Vector3(0.25, 0.95, 0.0))
+	mouth = _anchor_for_bone(_head_bone, Vector3(0.0, -0.08, 0.10), Vector3(0.0, 1.58, 0.10))
+	if _anim != null and not _idle_clip.is_empty():
+		_anim.play(_idle_clip)
 	using_model = true
 	return true
+
+
+## Attach to a bone when it exists, otherwise park a plain node at a sensible
+## offset so the inspection camera still has something to aim at.
+func _anchor_for_bone(index: int, offset: Vector3, fallback: Vector3) -> Node3D:
+	if _skeleton != null and index >= 0 and index < _skeleton.get_bone_count():
+		var anchor := _bone_anchor(_skeleton.get_bone_name(index), offset)
+		if anchor.get_parent() is BoneAttachment3D:
+			return anchor
+		if anchor.get_parent() == self:
+			remove_child(anchor)
+			anchor.queue_free()
+	var node := Node3D.new()
+	node.position = fallback
+	add_child(node)
+	return node
+
+
+## Scale the model so the skeleton spans MODEL_HEIGHT and stand it on y = 0.
+## Bone positions are used rather than the mesh AABB: a skinned mesh reports its
+## bind-space bounds, which are not in the same orientation as the posed skeleton.
+func _normalise_model(model: Node3D) -> void:
+	var bounds := _model_bounds_from_bones()
+	if bounds.size.y <= 0.001:
+		model.scale = Vector3.ONE
+		return
+	# Bones stop at the skull joint, so aim slightly under the full body height.
+	var fit := (MODEL_HEIGHT * height_scale * 0.94) / bounds.size.y
+	model.scale = Vector3(fit * body_width, fit, fit * body_width)
+	model.position.y = (-bounds.position.y + 0.03) * model.scale.y
+
+
+func _model_bounds_from_bones() -> AABB:
+	var out := AABB()
+	var first := true
+	var to_self := global_transform.affine_inverse() if is_inside_tree() else Transform3D.IDENTITY
+	for index in _skeleton.get_bone_count():
+		var point: Vector3 = to_self * (_skeleton.global_transform * _skeleton.get_bone_global_rest(index).origin)
+		if first:
+			out = AABB(point, Vector3.ZERO)
+			first = false
+		else:
+			out = out.expand(point)
+	return out
+
+
+func _bone_depth(index: int) -> int:
+	var depth := 0
+	var current := _skeleton.get_bone_parent(index)
+	while current >= 0 and depth < 32:
+		depth += 1
+		current = _skeleton.get_bone_parent(current)
+	return depth
+
+
+func _model_aabb(root: Node3D) -> AABB:
+	var out := AABB()
+	var first := true
+	for node in root.find_children("*", "MeshInstance3D", true, false):
+		var instance := node as MeshInstance3D
+		if instance.mesh == null:
+			continue
+		var box: AABB = _offset_from(instance, root) * instance.mesh.get_aabb()
+		out = box if first else out.merge(box)
+		first = false
+	return out
+
+
+## Transform of node relative to root, without needing either of them in a tree.
+func _offset_from(node: Node3D, root: Node3D) -> Transform3D:
+	var out := Transform3D.IDENTITY
+	var current: Node3D = node
+	while current != null and current != root:
+		out = current.transform * out
+		current = current.get_parent() as Node3D
+	return out
+
+
+## Bone names differ wildly between rigs (Hand.R, mixamorig:LeftHand,
+## Skeleton_arm_joint_L__4_...). Match on patterns rather than exact names.
+func _resolve_bones() -> void:
+	_head_bone = -1
+	_neck_bone = -1
+	_hand_r_bone = -1
+	_hand_l_bone = -1
+	_extra_fingers.clear()
+	var left_depth := -1
+	var right_depth := -1
+	for index in _skeleton.get_bone_count():
+		var bone := str(_skeleton.get_bone_name(index)).to_lower()
+		if _neck_bone < 0 and bone.contains("neck"):
+			_neck_bone = index
+		if bone.contains("head"):
+			_head_bone = index
+		elif _head_bone < 0 and bone.contains("neck") and bone.contains("2"):
+			_head_bone = index
+		if bone.contains("fingerextra"):
+			_extra_fingers.append(index)
+			continue
+		# Hands: deepest wrist/hand bone on each side. Digits are skipped so a
+		# thumb tip does not become the anchor.
+		var is_digit := bone.contains("thumb") or bone.contains("finger") or bone.contains("index") \
+			or bone.contains("middle") or bone.contains("ring") or bone.contains("pinky")
+		if is_digit:
+			continue
+		var is_hand := bone.contains("hand") or bone.contains("wrist") or bone.contains("arm_joint")
+		if not is_hand:
+			continue
+		var depth := _bone_depth(index)
+		var looks_left := bone.contains("left") or bone.contains("arm_joint_l") or bone.ends_with(".l") \
+			or bone.ends_with("_l")
+		var looks_right := bone.contains("right") or bone.contains("arm_joint_r") or bone.ends_with(".r") \
+			or bone.ends_with("_r")
+		if looks_left and depth > left_depth:
+			left_depth = depth
+			_hand_l_bone = index
+		elif looks_right and depth > right_depth:
+			right_depth = depth
+			_hand_r_bone = index
+	if _head_bone < 0:
+		_head_bone = _neck_bone
+	if _neck_bone < 0:
+		_neck_bone = _head_bone
+
+
+## Clip names vary as much as bone names, and some exports ship a single unnamed
+## walk cycle. Fall back to whatever is there rather than standing still.
+func _resolve_clips() -> void:
+	_walk_clip = ""
+	_idle_clip = ""
+	if _anim == null:
+		return
+	var names := _anim.get_animation_list()
+	if names.is_empty():
+		return
+	for name in names:
+		var clip := str(name).to_lower()
+		if clip.contains("walk") and _walk_clip.is_empty():
+			_walk_clip = str(name)
+		elif clip.contains("idle") and _idle_clip.is_empty():
+			_idle_clip = str(name)
+	if _walk_clip.is_empty():
+		for name in names:
+			if str(name).to_lower().contains("run"):
+				_walk_clip = str(name)
+				break
+	if _walk_clip.is_empty():
+		_walk_clip = str(names[0])
+	if _idle_clip.is_empty():
+		_idle_clip = _walk_clip
 
 
 func _find_of_type(node: Node, type_name: String) -> Node:
@@ -202,6 +350,9 @@ func _tint_model() -> void:
 	if _model_root == null:
 		return
 	var pants := shirt.darkened(0.55)
+	# For models with one textured material (every part in one skin) a name match
+	# never happens, so a muted multiply tint gives each customer its own look.
+	var tint := Color(0.82, 0.82, 0.82).lerp(shirt, 0.45).darkened(rng.randf_range(0.0, 0.22))
 	for mesh in _model_root.find_children("*", "MeshInstance3D", true, false) as Array[MeshInstance3D]:
 		var mesh_resource := mesh.mesh
 		if mesh_resource == null:
@@ -222,6 +373,8 @@ func _tint_model() -> void:
 				duplicate.albedo_color = pants
 			elif name_hint.contains("hair") or name_hint.contains("brow"):
 				duplicate.albedo_color = hair_color
+			else:
+				duplicate.albedo_color = tint
 			mesh.set_surface_override_material(index, duplicate)
 
 
@@ -657,13 +810,17 @@ func eyes_anchor() -> Node3D:
 # --- Rigged-model driving ---------------------------------------------------
 
 func _animate_model(delta: float, speed: float, looking_at: Vector3) -> void:
-	if _anim == null:
+	if _anim == null or _walk_clip.is_empty():
 		return
-	var want := "walk" if speed > 0.35 else "idle"
-	if _anim.has_animation(want) and _anim.current_animation != want:
-		_anim.play(want, 0.25)
-	if want == "walk":
-		_anim.speed_scale = clampf(speed / 1.3, 0.55, 1.9)
+	var moving := speed > 0.35
+	var want := _walk_clip if moving else _idle_clip
+	if _anim.current_animation != want:
+		_anim.play(want, 0.2)
+	if moving:
+		_anim.speed_scale = clampf(speed / 1.25, 0.6, 1.8)
+	elif want == _walk_clip:
+		# Only one clip shipped: crawl it so standing still still breathes.
+		_anim.speed_scale = 0.12
 	else:
 		_anim.speed_scale = 1.0
 	if not _extra_fingers.is_empty():

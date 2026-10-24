@@ -17,40 +17,37 @@ The id must match `data/products.json` (e.g. `milk`, `cereal`, `detergent`).
 
 ## Customers — `models/customers/`
 
-Three rigged variants ship in the repo: `customer_a` (average), `customer_b`
-(broad, belly, cap) and `customer_c` (slim, hair bun). A customer picks one at
-random on spawn and falls back to the procedural body if none load.
+`customer_man.glb` is a real rigged humanoid (Khronos `CesiumMan`, CC-BY 4.0),
+re-exported from Blender with an added breathing `idle` clip alongside the
+shipped `walk` cycle. `MODEL_PATHS` in `scripts/customer/customer_body.gd` lists
+every model that should be considered; the first one that loads wins and anything
+missing falls back to the procedural body.
 
-Contract for a replacement or a new variant:
+The loader is deliberately tolerant, because rigs disagree about everything:
 
-- humanoid, ~1.84 m tall, feet at origin, facing −Z
-- armature bones named `Hips, Spine, Chest, Neck, Head, Shoulder.L/R,
-  UpperArm.L/R, LowerArm.L/R, Hand.L/R, Thigh.L/R, Shin.L/R, Foot.L/R`
-- optional `FingerExtra0.L/R` and `FingerExtra1.L/R` bones weighted to a pair of
-  hidden digits — the game scales them to zero until the six-finger anomaly
-  needs them, so the hand counts five fingers until it doesn't
-- animations named `idle` and `walk` (looping)
-- one material per body part named `Skin`, `Shirt`, `Pants`, `Hair`, `Eye`,
-  `Shoe` — the game duplicates and recolours them per customer, so two people
-  never look identical
+- height is normalised from the **skeleton**, not the mesh AABB (a skinned mesh
+  reports bind-space bounds, which can be Z-up even when the skeleton is Y-up)
+- bones are matched by pattern, not name: `Head`/`mixamorig:Head`, any `neck`,
+  and the deepest hand/wrist bone per side (`Hand.R`, `LeftHand`,
+  `Skeleton_arm_joint_L__4_`); digit bones are skipped so a thumb tip never
+  becomes the hand anchor
+- clips are matched by name (`walk`, `idle`, or `run` as a walk fallback); a
+  single-clip export is crawled slowly for the idle pose
+- each customer gets a per-material tint, applied as a multiply so textured
+  models keep their detail
 
-Anomalies that need facial geometry (wide smile, extra teeth, offset eyes) still
-only exist on the procedural body; everything skeletal (neck angle, long hands,
-extra fingers, head turns, freeze, glitch, silhouette) works on the models.
+Anomalies: everything skeletal works (neck angle, long hands, head turns, freeze,
+glitch, silhouette). Facial mutations (wide smile, extra teeth, offset eyes) and
+six fingers need geometry the mesh does not have — they still exist as clues in
+inspection text, but they have no visible deformation on this model.
 
-Rebuild all three with:
-
-```
-blender -b --factory-startup -P tools/blender/build_customer_rig.py
-```
-
-The script is parameterised by `SPECS` at the top: torso width/depth, belly,
-arm and leg thickness, head size, shoulder spread and hair style. Verify an
-export without opening the game:
+Rebuild / extend:
 
 ```
-godot --headless --path . -- --modelcheck=customer_b
-blender -b --factory-startup -P tools/blender/inspect_customer.py -- models/customers/customer_b.glb
+# add an idle clip to a walk-only export
+blender -b --factory-startup -P tools/blender/add_idle_clip.py -- in.glb out.glb
+# verify what the game will actually resolve
+godot --headless --path . -- --modelcheck=body
 ```
 
 ## How models are normalised

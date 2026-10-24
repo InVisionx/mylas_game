@@ -11,6 +11,8 @@ var _event_timer := 24.0
 var _busy := false
 var _scare_active := false
 var _scare_deadline := 0
+var _scare_customer: Customer = null
+var _scare_kind := ""
 var _last_scare := ""
 var _rng := RandomNumberGenerator.new()
 var _base_energies: Array = []
@@ -29,9 +31,12 @@ func setup(refs: Dictionary) -> void:
 
 
 func _process(delta: float) -> void:
-	# A scare must never outlive its welcome: if the shift ended or the sequence
-	# stalled, drop the locks instead of refreshing them forever.
-	if _scare_active and (not GameManager.shift_active or Time.get_ticks_msec() > _scare_deadline):
+	# A scare must never outlive its welcome: if the shift ended, the customer it
+	# was playing on was freed, or the sequence stalled, drop the locks instead of
+	# refreshing them forever.
+	if _scare_active and (not GameManager.shift_active
+			or Time.get_ticks_msec() > _scare_deadline
+			or (_scare_customer != null and not is_instance_valid(_scare_customer))):
 		_abort_scare()
 	if _scare_active:
 		GameManager.hold_input("jumpscare")
@@ -248,7 +253,9 @@ func play_entity_departure(customer: Customer) -> void:
 	var kind := _pick_scare()
 	Diagnostics.log_event("jumpscare %s (customer %d)" % [kind, customer.customer_id])
 	_scare_active = true
-	_scare_deadline = Time.get_ticks_msec() + 30000
+	_scare_kind = kind
+	_scare_customer = customer
+	_scare_deadline = Time.get_ticks_msec() + 12000
 	GameManager.open_modal("jumpscare")
 	player.focus_mode(true, 1.0)
 	Events.jumpscare_started.emit(kind)
@@ -267,23 +274,30 @@ func play_entity_departure(customer: Customer) -> void:
 		_:
 			await _scare_doorway(customer)
 
+	_finish_scare(kind)
+
+
+## Single exit path. Runs whether the sequence played out or was aborted, so the
+## audio duck, the focus lease and the input lock can never be left behind.
+func _finish_scare(kind: String, aborted: bool = false) -> void:
 	AudioManager.loop_set_volume("hum_loop", -20.0, 2.0)
 	AudioManager.loop_set_volume("room_loop", -22.0, 2.0)
 	_scare_active = false
+	_scare_deadline = 0
+	_scare_customer = null
 	GameManager.close_modal("jumpscare")
 	if is_instance_valid(player):
 		player.focus_mode(false)
 		player.release_forced_look()
 	Events.jumpscare_finished.emit(kind)
+	if aborted:
+		Diagnostics.log_event("jumpscare %s aborted, controls returned" % kind)
 
 
 func _abort_scare() -> void:
-	_scare_active = false
-	_scare_deadline = 0
-	GameManager.release_input("jumpscare")
-	if is_instance_valid(player):
-		player.focus_mode(false)
-		player.release_forced_look()
+	if not _scare_active:
+		return
+	_finish_scare(_scare_kind, true)
 
 
 func _pick_scare() -> String:
